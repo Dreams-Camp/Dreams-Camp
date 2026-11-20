@@ -104,10 +104,11 @@ async function init(){
  if(!S.db){if(isAdminView()||!SNAP.settings){app.innerHTML=isAdminView()?'<div class="card"><h2>لوحة التحكم تحتاج تسجيل الدخول بحساب المالك</h2></div>':'<div class="card"><h2>الصفحة غير جاهزة بعد</h2><p>لم تُنشر صفحة الزبائن بعد.</p></div>';return}Object.assign(S.settings,SNAP.settings);S.media=SNAP.media||[];S.uid='anon';window.addEventListener('hashchange',render);render();return}
  S.isAdmin=!!(S.user&&S.user.canEdit&&S.user.canEdit());
  try{S.uid=await S.user.id()}catch(e){S.uid='anon'+Math.random().toString(36).slice(2)}
- const db=S.db,t=setTimeout(()=>{},10000);
- db.doc('settings/main').onSnapshot(d=>{S.sl=1;if(d.exists)Object.assign(S.settings,dd(d));render()});
- db.doc('settings/logo').onSnapshot(d=>{if(d.exists){S.settings.logo=dd(d).url;render()}});
- db.doc('settings/hero').onSnapshot(d=>{if(d.exists){S.settings.heroBg=dd(d).url;render()}});
+ const db=S.db,t=setTimeout(()=>{if(!S.sl){S.late=1;render()}},6000);
+ try{const c=JSON.parse(localStorage.getItem('campSet')||'null');if(c){Object.assign(S.settings,c);S.cached=1;const l=localStorage.getItem('campLogo'),h=localStorage.getItem('campHero');if(l)S.settings.logo=l;if(h)S.settings.heroBg=h}}catch(e){}
+ db.doc('settings/main').onSnapshot(d=>{S.sl=1;if(d.exists)Object.assign(S.settings,dd(d));try{const c={...S.settings};delete c.logo;delete c.heroBg;localStorage.setItem('campSet',JSON.stringify(c))}catch(e){}render()});
+ db.doc('settings/logo').onSnapshot(d=>{if(d.exists){S.settings.logo=dd(d).url;try{localStorage.setItem('campLogo',S.settings.logo)}catch(e){}render()}});
+ db.doc('settings/hero').onSnapshot(d=>{if(d.exists){S.settings.heroBg=dd(d).url;try{localStorage.setItem('campHero',S.settings.heroBg)}catch(e){}render()}});
  db.collection('media').onSnapshot(q=>{S.media=q.docs.map(d=>({id:d.id,...dd(d)}));render()});
  db.collection('likes').onSnapshot(q=>{S.likes=q.docs.map(d=>d.id);S.liked=S.likes.includes(S.uid);render()});
  if(S.isAdmin){
@@ -128,7 +129,7 @@ const saveSt=async p=>{if(!S.sl){alert('لم تكتمل قراءة الإعدا�
 const big={};['logo','heroBg'].forEach(k=>{if(k in p)big[k]=p[k]});Object.assign(S.settings,p);const main={...S.settings};delete main.logo;delete main.heroBg;
 try{for(const k in big)await S.db.doc('settings/'+(k==='logo'?'logo':'hero')).set({url:big[k]||''});await S.db.doc('settings/main').set(main)}catch(e){alert('تعذر الحفظ: '+(e.code||e.message));e.__shown=1;throw e}};
 async function ai(prompt,json){const sm=await claude.use('sample');if(!sm){alert('الذكاء الاصطناعي غير متاح');return null}try{return json?await sm.json(prompt):(await sm(prompt)).text}catch(e){alert('تعذر التوليد');return null}}
-function render(){theme();const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&a.id)return;
+function render(){if(S.db&&!S.sl&&!S.cached&&!S.late){app.innerHTML='<p style="text-align:center;margin-top:30vh;color:var(--mu)">جارٍ التحميل…</p>';return}theme();const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&a.id)return;
  if(isAdminView()){ if(!S.isAdmin){loginForm();return} renderAdmin();if(S.calOpen)renderCal()}
  else if(location.hash==='#rate')renderRate();else renderGuest();
 }
