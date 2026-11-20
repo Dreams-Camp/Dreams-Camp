@@ -79,6 +79,7 @@ if(f.type==='image/png'&&i===0){const p=cv.toDataURL('image/png');if(p.length<40
 url=cv.toDataURL('image/jpeg',q);if(url.length<600000)break;k*=.8;q=Math.max(.4,q-.08)}
 return {url}}
 async function save({filename,data}){const a=document.createElement('a');a.href=URL.createObjectURL(data);a.download=filename;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+window.addEventListener('unhandledrejection',e=>{const r=e.reason;if(r&&r.code&&!r.__shown)alert('تعذرت العملية: '+r.code)});
 let cu=await new Promise(res=>{const u=onAuthStateChanged(auth,x=>{u();res(x)})});
 if(!cu){try{await signInAnonymously(auth);cu=auth.currentUser}catch(e){document.getElementById('app').innerHTML='<div class="card"><h2>تعذر الاتصال</h2><p>تأكد من تفعيل الدخول المجهول (Anonymous) في Firebase.</p></div>';throw e}}
 const isAdmin=!cu.isAnonymous&&cu.email===ADMIN;
@@ -104,7 +105,9 @@ async function init(){
  S.isAdmin=!!(S.user&&S.user.canEdit&&S.user.canEdit());
  try{S.uid=await S.user.id()}catch(e){S.uid='anon'+Math.random().toString(36).slice(2)}
  const db=S.db,t=setTimeout(()=>{},10000);
- db.doc('settings/main').onSnapshot(d=>{if(d.exists)Object.assign(S.settings,dd(d));render()});
+ db.doc('settings/main').onSnapshot(d=>{S.sl=1;if(d.exists)Object.assign(S.settings,dd(d));render()});
+ db.doc('settings/logo').onSnapshot(d=>{if(d.exists){S.settings.logo=dd(d).url;render()}});
+ db.doc('settings/hero').onSnapshot(d=>{if(d.exists){S.settings.heroBg=dd(d).url;render()}});
  db.collection('media').onSnapshot(q=>{S.media=q.docs.map(d=>({id:d.id,...dd(d)}));render()});
  db.collection('likes').onSnapshot(q=>{S.likes=q.docs.map(d=>d.id);S.liked=S.likes.includes(S.uid);render()});
  if(S.isAdmin){
@@ -121,7 +124,9 @@ async function init(){
 
 function theme(){const r=document.documentElement.style;r.setProperty('--ac',S.settings.ac);r.setProperty('--ac2',S.settings.ac2);if(S.settings.heroBg)r.setProperty('--hb','linear-gradient(rgba(0,0,0,.4),rgba(0,0,0,.4)),url("'+S.settings.heroBg+'") center/cover');else r.removeProperty('--hb');document.title=S.settings.name}
 const brand=()=>`<div class="brand">${S.settings.logo?`<img class="logo" src="${S.settings.logo}" alt="">`:'<span style="font-size:40px">🏕️</span>'}<h1>${esc(S.settings.name)}</h1></div>`;
-const saveSt=p=>{Object.assign(S.settings,p);return S.db.doc('settings/main').set(S.settings)};
+const saveSt=async p=>{if(!S.sl){alert('لم تكتمل قراءة الإعدادات من الخادم. تأكد من نشر القواعد في Firebase ثم أعد تحميل الصفحة.');const e0=new Error('not loaded');e0.__shown=1;throw e0}
+const big={};['logo','heroBg'].forEach(k=>{if(k in p)big[k]=p[k]});Object.assign(S.settings,p);const main={...S.settings};delete main.logo;delete main.heroBg;
+try{for(const k in big)await S.db.doc('settings/'+(k==='logo'?'logo':'hero')).set({url:big[k]||''});await S.db.doc('settings/main').set(main)}catch(e){alert('تعذر الحفظ: '+(e.code||e.message));e.__shown=1;throw e}};
 async function ai(prompt,json){const sm=await claude.use('sample');if(!sm){alert('الذكاء الاصطناعي غير متاح');return null}try{return json?await sm.json(prompt):(await sm(prompt)).text}catch(e){alert('تعذر التوليد');return null}}
 function render(){theme();const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&a.id)return;
  if(isAdminView()){ if(!S.isAdmin){loginForm();return} renderAdmin();if(S.calOpen)renderCal()}
