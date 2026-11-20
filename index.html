@@ -136,8 +136,8 @@ function render(){if(S.db&&!S.sl&&!S.cached&&!S.late){app.innerHTML='<p style="t
 
 /* ---------- Admin ---------- */
 function renderAdmin(){
- const b=S.bookings,st=S.settings;
- const nw=b.filter(x=>x.status==='new'),ok=b.filter(x=>x.status==='approved'),no=b.filter(x=>x.status==='rejected');
+ const st=S.settings;const arch=S.bookings.filter(x=>archState(x)!==''),b=S.bookings.filter(x=>!arch.includes(x));
+ const nw=b.filter(x=>x.status==='new'),ok=b.filter(x=>x.status==='approved'),no=[],rejN=S.bookings.filter(x=>x.status==='rejected').length;
  const noAns=S.visits.filter(v=>v.answer==='no').length;
  const notes=[];
  nw.forEach(x=>notes.push(['n','🎉 حجز جديد من '+x.name+' ليوم '+x.date]));
@@ -146,6 +146,7 @@ function renderAdmin(){
  ok.forEach(x=>{const n=daysTo(x.date);if(n>=0&&n<=2)notes.push(['w','⏰ تنبيه: حجز '+x.name+' '+(n===0?'اليوم':n===1?'غدًا':'بعد يومين')+' ('+x.date+')'])});
  ok.forEach(x=>{if(x.pay!=='full')notes.push(['w','💰 '+x.name+': '+(x.pay==='deposit'?'دفع العربون فقط':'لم يدفع')+' — المتبقي غير مسدد'])});
  ok.forEach(x=>{if(x.ins!=='paid')notes.push(['','🛡️ التأمين لم يُستلم من '+x.name])});
+ S.bookings.filter(x=>archState(x)==='زبائن سابقون'&&remainNum(x)>0).forEach(x=>notes.push(['w','💰 '+x.name+': انتهى حجزه وعليه متبقي '+remainNum(x)+' ريال']));
  b.forEach(x=>{if(x.prevClaim&&!x.prevOk&&!x.prevCheck)notes.push(['w','⚠️ '+x.name+' يقول إنه زائر سابق لكن رقمه ('+x.phone+') غير مسجل — يلزم تأكيدك'])});
  no.forEach(x=>notes.push(['n','✖ رفض/لم يتم الاتفاق مع '+x.name]));
  const rows=b.map(x=>`<tr><td>${esc(x.name)}${histBadge(x)}${x.prevOk?' <span class="tag">زائر سابق ✓'+(x.prevCheck?' ('+esc(x.prevCheck)+')':'')+'</span>':x.prevClaim?(x.prevCheck?' <span class="tag">'+esc(x.prevCheck)+'</span>':'<br><span class="tag" style="background:var(--rd);color:#fff">رقم غير مسجل</span><br><button class="g" data-pc="yes" data-id="'+x.id+'">✔ رقم سابق</button> <button class="o" data-pc="chg" data-id="'+x.id+'">🔄 تغيّر الرقم</button> <button class="o" data-pc="no" data-id="'+x.id+'">؟ غير متأكد</button>'):''}</td><td>${esc(x.phone)}</td><td>${x.sections}</td><td>${esc(x.date)}<br><small>${esc(x.hijri)}</small></td><td>${x.price}${x.offer?'<br><small>مقترح: '+x.offer+'</small>':''}</td>
@@ -158,11 +159,12 @@ function renderAdmin(){
  <div class="grid" style="margin-top:12px">
  <div class="card stat"><b>${S.visits.length}</b>الزوار</div><div class="card stat"><b>${S.likes.length}</b>الإعجابات</div>
  <div class="card stat"><b>${nw.length}</b>طلبات جديدة</div><div class="card stat"><b>${ok.length}</b>موافق</div>
- <div class="card stat"><b>${no.length+noAns}</b>رافضون / غير مهتمين</div></div>
+ <div class="card stat"><b>${rejN+noAns}</b>رافضون / غير مهتمين</div></div>
  <div class="card"><h3>🔔 الإشعارات والتنبيهات</h3>${notes.map(n=>`<div class="note ${n[0]}">${esc(n[1])}</div>`).join('')||'<p>لا توجد تنبيهات.</p>'}</div>
  <div class="card"><h3>➕ إضافة حجز يدوي (من واتساب)</h3><div class="grid"><div><label>الاسم</label><input id="mn"></div><div><label>واتساب</label><input id="mp" type="tel"></div><div><label>الأقسام</label><select id="ms"><option>1</option><option>2</option></select></div><div><label>التاريخ</label><input id="md" type="date" dir="ltr"></div></div><button id="madd">إضافة الحجز</button></div>
- <div class="card"><h3>⭐ التقييمات (${S.ratings.length}${S.ratings.length?' — المتوسط '+(S.ratings.reduce((a,r)=>a+r.stars,0)/S.ratings.length).toFixed(1):''})</h3>${S.ratings.map(r=>`<div class="note">${'⭐'.repeat(r.stars)} ${esc(r.name||'')}<br>${esc(r.note||'')}${r.note?`<br><button class="o" data-q="${r.id}">📌 نشر في «قالوا عن المخيم»</button>`:''}</div>`).join('')||'<p>لا توجد تقييمات بعد.</p>'}</div>
+ <div class="card"><h3>⭐ التقييمات (${S.ratings.length}${S.ratings.length?' — المتوسط '+(S.ratings.reduce((a,r)=>a+r.stars,0)/S.ratings.length).toFixed(1):''})</h3>${S.ratings.slice().sort((a,b)=>(b.at||0)-(a.at||0)).map(r=>`<div class="note">${'⭐'.repeat(r.stars)} ${esc(r.name||'')} <small style="color:var(--mu)">${r.at?new Date(r.at).toLocaleDateString('ar-SA'):''}</small><br>${esc(r.note||'')}${r.note?`<br><button class="o" data-q="${r.id}">📌 نشر في «قالوا عن المخيم»</button>`:''}</div>`).join('')||'<p>لا توجد تقييمات بعد.</p>'}</div>
  <div class="card"><h3>📋 الطلبات (ترتيب الإكسل)</h3><div class="tbl"><table><tr><th>الاسم</th><th>واتساب</th><th>الأقسام</th><th>التاريخ</th><th>السعر</th><th>الحالة</th><th>المتبقي</th><th>الدفع / الطريقة</th><th>التأمين</th><th>إجراء</th></tr>${rows||'<tr><td colspan="9">لا طلبات بعد</td></tr>'}</table></div></div>
+ ${archCards()}
  <div class="card"><h3>🏷️ هوية المخيم</h3>
  <label>اسم المخيم</label><input id="nm0" value="${esc(st.name)}">
  <label>الشعار</label><input type="file" id="lg" accept="image/*">
@@ -194,6 +196,8 @@ function renderAdmin(){
  ${secCard(2)}`;
  app.querySelectorAll('[data-s]').forEach(e=>e.onclick=()=>{const x=S.bookings.find(b=>b.id===e.dataset.id);if(!x)return;if(e.dataset.s==='approved')payModal(x.id);else setStatus(x,'rejected',{})});
  app.querySelectorAll('[data-pm]').forEach(e=>e.onclick=()=>payModal(e.dataset.pm));
+ app.querySelectorAll('[data-restore]').forEach(e=>e.onclick=()=>{if(confirm('استعادة الطلب إلى الطلبات الحالية؟'))S.db.doc('bookings/'+e.dataset.restore).update({status:'new'})});
+ app.querySelectorAll('[data-adel]').forEach(e=>e.onclick=()=>{if(confirm('حذف نهائي لا يمكن التراجع عنه. متابعة؟'))S.db.doc('bookings/'+e.dataset.adel).delete()});
  app.querySelectorAll('select[data-f]').forEach(e=>e.onchange=()=>S.db.doc('bookings/'+e.dataset.id).update({[e.dataset.f]:e.value}));
  app.querySelectorAll('[data-del]').forEach(e=>e.onclick=()=>S.db.doc('media/'+e.dataset.del).delete());
  app.querySelectorAll('[data-rate]').forEach(e=>e.onclick=()=>{const x=S.bookings.find(b=>b.id===e.dataset.rate);if(!x)return;const u=pageBase()+'#rate';let t='شكرًا لزيارتك '+x.name+' لمخيم '+S.settings.name+' 🌿\nنسعد بتقييمك وملاحظاتك:\n'+u;if(S.settings.greview)t+='\nأو قيّمنا على خرائط جوجل:\n'+S.settings.greview;window.open('https://wa.me/'+waNum(x.phone)+'?text='+encodeURIComponent(t),'_blank')});
@@ -249,7 +253,7 @@ function renderAdmin(){
  app.querySelectorAll('[data-mv]').forEach(e=>e.onclick=async()=>{const [id,d,n]=e.dataset.mv.split('|');const arr=srt(S.media.filter(secOf(+n)));const i=arr.findIndex(x=>x.id===id),j=i+ +d;if(j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];for(let k=0;k<arr.length;k++)await S.db.doc('media/'+arr[k].id).update({ord:k})});
 }
 async function exportXlsx(){
- const data=S.bookings.map(x=>({'الاسم':x.name,'واتساب':x.phone,'الأقسام':x.sections,'التاريخ الميلادي':x.date,'التاريخ الهجري':x.hijri,'السعر':x.price,'السعر المقترح':x.offer||'','زائر سابق':x.prevOk?'نعم (مؤكد)':x.prevClaim?'يدّعي':'لا','تأكيد الأدمن':x.prevCheck||'','المتبقي':remainNum(x),'طريقة الدفع':x.method||'','الخدمات':(x.services||[]).join('، '),'ملاحظات':x.note||'','مبلغ مدفوع':x.depAmt||'','مبلغ التأمين':x.insAmt||'','طريقة التأمين':x.insMethod||'','العربون':x.deposit,'التأمين':x.insurance,'الحالة':x.status,'الدفع':x.pay,'استلام التأمين':x.ins}));
+ const data=S.bookings.map(x=>({'الاسم':x.name,'واتساب':x.phone,'الأقسام':x.sections,'التاريخ الميلادي':x.date,'التاريخ الهجري':x.hijri,'السعر':x.price,'السعر المقترح':x.offer||'','زائر سابق':x.prevOk?'نعم (مؤكد)':x.prevClaim?'يدّعي':'لا','تأكيد الأدمن':x.prevCheck||'','المتبقي':remainNum(x),'طريقة الدفع':x.method||'','الخدمات':(x.services||[]).join('، '),'ملاحظات':x.note||'','الأرشفة':archState(x),'مبلغ مدفوع':x.depAmt||'','مبلغ التأمين':x.insAmt||'','طريقة التأمين':x.insMethod||'','العربون':x.deposit,'التأمين':x.insurance,'الحالة':x.status,'الدفع':x.pay,'استلام التأمين':x.ins}));
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'الحجوزات');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(S.prevList.map(c=>({'الاسم':c.n,'الرقم':c.p}))),'الزبائن السابقون');
  const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
  try{const d=await claude.use('downloads');if(!d)throw 0;await d.save({filename:'bookings.xlsx',data:new Blob([out],{type:'application/octet-stream'})})}catch(e){alert('التنزيل غير متاح في هذا العرض')}
@@ -381,6 +385,12 @@ const dm=$('#pmMet').value,u={pay:$('#pmPay').value,depAmt:+$('#pmAmt').value||0
 if(r1)u.rcDep=r1;if(r2)u.rcIns=r2;
 if(appr)await S.db.doc('bookings/'+x.id).update(u);else await setStatus(x,'approved',u);
 el.innerHTML=''}catch(e){alert('تعذر الحفظ: '+(e.code||e.message));b.disabled=false}}}
+const todayL=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+const archState=x=>{const past=x.date&&x.date<todayL();if(x.status==='rejected')return 'الأرشيف: مرفوض';if(x.status==='new'&&past)return 'الأرشيف: انتهى بدون تأكيد';if(x.status==='approved'&&past)return 'زبائن سابقون';return ''};
+function archCards(){const A=S.bookings.filter(x=>archState(x).startsWith('الأرشيف')),Dn=S.bookings.filter(x=>archState(x)==='زبائن سابقون').sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+const row=(x,a)=>`<tr><td>${esc(x.name)}</td><td dir="ltr">${esc(x.phone)}</td><td>${esc(x.date)}</td><td>${x.sections===2?'قسمان':'قسم'}</td><td>${x.price}</td>${a}</tr>`;
+return `<div class="card"><h3>🗄️ الأرشيف (${A.length})</h3><p style="color:var(--mu)">يُنقل إليه تلقائيًا كل حجز مرفوض أو انتهى يومه دون تأكيد.</p><div class="tbl"><table><tr><th>الاسم</th><th>واتساب</th><th>التاريخ</th><th>الأقسام</th><th>السعر</th><th>السبب</th><th></th></tr>${A.map(x=>row(x,`<td>${esc(archState(x).replace('الأرشيف: ',''))}</td><td>${x.status==='rejected'?`<button class="o" data-restore="${x.id}">↩️ استعادة</button> `:''}<button class="r" data-adel="${x.id}">حذف</button></td>`)).join('')||'<tr><td colspan="7">الأرشيف فارغ</td></tr>'}</table></div></div>
+<div class="card"><h3>👥 زبائن سابقون — حجوزات منتهية (${Dn.length})</h3><p style="color:var(--mu)">يُنقل إليه تلقائيًا كل حجز مؤكد انتهى يومه.</p><div class="tbl"><table><tr><th>الاسم</th><th>واتساب</th><th>التاريخ</th><th>الأقسام</th><th>السعر</th><th>المتبقي</th><th>ملاحظات</th></tr>${Dn.map(x=>row(x,`<td>${remain(x)}</td><td>${esc(x.note||'')}</td>`)).join('')||'<tr><td colspan="7">لا حجوزات منتهية بعد</td></tr>'}</table></div></div>`}
 function wm(){const t=`<span>${S.settings.logo?`<img src="${S.settings.logo}" alt="">`:''}${esc(S.settings.name)}</span>`;return '<div id="wm">'+t.repeat(60)+'</div>'}
 const MN=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const opts=(a,ph)=>`<option value="">${ph}</option>`+a.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
