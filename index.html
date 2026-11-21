@@ -192,6 +192,7 @@ function renderAdmin(){
  <div class="card"><h3>🧾 الإيصال — عبارات أسفل الإيصال</h3>
  <p style="color:var(--mu)">تُطبع هذه العبارات في أسفل كل إيصال، بعد رقم التحويل البنكي (إن كان الدفع تحويلًا). اكتب سطرًا لكل عبارة، أو اختر من العبارات الجاهزة.</p>
  <textarea id="rcp" style="min-height:110px">${esc(rcLines().join('\n'))}</textarea>
+ <label>عبارة التنبيه أسفل الإيصال (تحل محل التوقيعات)</label><textarea id="rcn" style="min-height:60px">${esc(rcNote())}</textarea>
  <label>عبارة جاهزة</label><select id="rcBank"><option value="">— اختر —</option>${RC_BANK.map((t,i)=>`<option value="${i}">${esc(t)}</option>`).join('')}</select>
  <div class="tabs"><button class="o" id="rcAdd">➕ أضف العبارة المختارة</button><button class="ai" id="aiRc">✨ اقترح عبارات بالذكاء الاصطناعي</button></div></div>
  <div class="card"><h3>🤝 الزبائن السابقون (${S.prevList.length})</h3>
@@ -300,7 +301,7 @@ let step='ask',done='';
 const waNum=p=>{let d=String(p||'').replace(/\D/g,'');if(d.startsWith('00'))d=d.slice(2);if(d.startsWith('0'))d='966'+d.slice(1);else if(d.length===9)d='966'+d;return d};
 const safe=u=>/^https?:\/\//.test(u||'')?u:'';
 const hashP=async p=>{const b=new TextEncoder().encode('camp:'+String(p).replace(/\D/g,'').slice(-9));const h=await crypto.subtle.digest('SHA-256',b);return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join('')};
-const extra=async()=>({loc:safe($('#loc').value.trim()),tel:$('#tel').value.trim(),guard:$('#guard').value.trim(),greview:safe($('#greview').value.trim()),prevDisc:+$('#pd').value||0,rcPhrases:($('#rcp')?$('#rcp').value.split('\n').map(x=>x.trim()).filter(Boolean):rcLines()),prevO1:+$('#po1').value||0,prevN1:+$('#pn1').value||0,prevO2:+$('#po2').value||0,prevN2:+$('#pn2').value||0,prevOD:+$('#poD').value||0,prevND:+$('#pnD').value||0,prevOI:+$('#poI').value||0,prevNI:+$('#pnI').value||0,welcome:$('#wl').value.trim()||'مرحبًا بك في {name} 🌿'});
+const extra=async()=>({loc:safe($('#loc').value.trim()),tel:$('#tel').value.trim(),guard:$('#guard').value.trim(),greview:safe($('#greview').value.trim()),prevDisc:+$('#pd').value||0,rcNote:($('#rcn')?$('#rcn').value.trim():rcNote()),rcPhrases:($('#rcp')?$('#rcp').value.split('\n').map(x=>x.trim()).filter(Boolean):rcLines()),prevO1:+$('#po1').value||0,prevN1:+$('#pn1').value||0,prevO2:+$('#po2').value||0,prevN2:+$('#pn2').value||0,prevOD:+$('#poD').value||0,prevND:+$('#pnD').value||0,prevOI:+$('#poI').value||0,prevNI:+$('#pnI').value||0,welcome:$('#wl').value.trim()||'مرحبًا بك في {name} 🌿'});
 const setPrev=async cur=>{await S.db.doc('admin/prevlist').set({list:cur});S.prevList=cur;const h=[];for(const c of cur)h.push(await hashP(c.p));await saveSt({prev:h})};
 const k9=p=>String(p).replace(/\D/g,'').slice(-9);
 const addPrev=async items=>{const cur=S.prevList.slice();items.forEach(i=>{if(k9(i.p).length>=7&&!cur.some(c=>k9(c.p)===k9(i.p)))cur.push({n:i.n||'',p:String(i.p).trim(),c:i.c||1})});await setPrev(cur)};
@@ -489,6 +490,8 @@ function localAI(q0){
 let CALC={};
 const RC_BANK=['الوطن غالٍ، نحبّه ونصونه ونذود عنه بكل ما نملك.','دام عزّك يا وطن، وسلم حماتك الأوفياء.','حب الوطن عهدٌ ووفاء، وحمايته شرفٌ وفخر.','وطنٌ نحميه ويحمينا، وعلى ترابه نعيش بأمن وأمان.','نفتخر بوطننا، ونشكر رجاله المرابطين على الثغور.','عزّ الوطن من عزّ أبنائه، فلنكن له سندًا وفخرًا.','الأوطان تُبنى بالإخلاص وتُحمى بالأوفياء.'];
 const RC_DEF=[RC_BANK[0],RC_BANK[1]];
+const RC_NOTE='هذا الإيصال تمت كتابته كإثبات إيجار للمخيم فقط، وليس لحساب مؤسسة.';
+const rcNote=()=>typeof S.settings.rcNote==='string'?S.settings.rcNote:RC_NOTE;
 const rcLines=()=>Array.isArray(S.settings.rcPhrases)?S.settings.rcPhrases:RC_DEF;
 function rcData(x){const price=+x.price||0,pay=x.pay||'none',dA=+(x.depAmt??x.deposit)||0,iA=+(x.insAmt??x.insurance)||0,d=x.date?dates(x.date):{g:'',h:''};
  return {price,paidDep:pay==='full'?price:pay==='deposit'?dA:0,insAmt:iA,insPaid:x.ins==='paid',rem:remainNum(x),g:d.g,h:d.h,dm:x.depMethod||(x.method==='تحويل'?'تحويل':x.method==='نقد'?'كاش':''),im:x.insMethod||'',dRef:x.depRef||'',iRef:x.insRef||'',no:'R-'+String(x.at||Date.now()).slice(-6)}}
@@ -502,10 +505,10 @@ ${ln('اسم المستأجر',esc(x.name))}${ln('رقم الجوال','<span di
 ${ln('يوم الحجز',esc(r.g))}${ln('الموافق (هجري)',esc(r.h))}${ln('الأقسام',esc(secLabel(x)))}${hr}
 ${ln('إجمالي السعر',fm(r.price)+' ريال')}${ln('العربون'+(r.paidDep>0&&r.dm?' ('+esc(r.dm)+')':''),r.paidDep>0?fm(r.paidDep)+' ريال':'لم يُستلم')}${ln('التأمين'+(r.insPaid&&r.im?' ('+esc(r.im)+')':''),fm(r.insAmt)+' ريال'+(r.insPaid?'':' (لم يُستلم)'))}${ln('المتبقي',fm(r.rem)+' ريال',1)}
 ${tr.length?hr+tr.map(t=>ln(t[0],t[1]?'<span dir="ltr">'+esc(t[1])+'</span>':'<span style="display:inline-block;width:130px;border-bottom:1px dotted #333">&nbsp;</span>')).join('')+'<div style="font-size:11px;color:#555">يُسجَّل رقم التحويل البنكي حفظًا لحقوق الطرفين.</div>':''}
-${hr}<div style="display:flex;justify-content:space-between;font-size:12px"><span>توقيع المستلم: ________</span><span>توقيع المستأجر: ________</span></div>
+${rcNote()?hr+'<div style="text-align:center;font-size:12px;color:#333">'+esc(rcNote())+'</div>':''}
 ${ph.length?hr+'<div style="text-align:center;font-size:13px;font-weight:600">'+ph.map(esc).join('<br>')+'</div>':''}</div>`}
 function receiptText(x){const r=rcData(x),st=S.settings,tr=rcTransfers(r),ph=rcLines();
- return [st.name+' — إيصال حجز','رقم الإيصال: '+r.no,'المستأجر: '+x.name,'الجوال: '+x.phone,'يوم الحجز: '+r.g,'الموافق: '+r.h,'الأقسام: '+secLabel(x),'----------','إجمالي السعر: '+fm(r.price)+' ريال','العربون: '+(r.paidDep>0?fm(r.paidDep)+' ريال'+(r.dm?' ('+r.dm+')':''):'لم يُستلم'),'التأمين: '+fm(r.insAmt)+' ريال'+(r.insPaid?(r.im?' ('+r.im+')':''):' (لم يُستلم)'),'المتبقي: '+fm(r.rem)+' ريال',...tr.map(t=>t[0]+': '+(t[1]||'................')),...(ph.length?['----------',...ph]:[])].join('\n')}
+ return [st.name+' — إيصال حجز','رقم الإيصال: '+r.no,'المستأجر: '+x.name,'الجوال: '+x.phone,'يوم الحجز: '+r.g,'الموافق: '+r.h,'الأقسام: '+secLabel(x),'----------','إجمالي السعر: '+fm(r.price)+' ريال','العربون: '+(r.paidDep>0?fm(r.paidDep)+' ريال'+(r.dm?' ('+r.dm+')':''):'لم يُستلم'),'التأمين: '+fm(r.insAmt)+' ريال'+(r.insPaid?(r.im?' ('+r.im+')':''):' (لم يُستلم)'),'المتبقي: '+fm(r.rem)+' ريال',...tr.map(t=>t[0]+': '+(t[1]||'................')),...(rcNote()?['----------',rcNote()]:[]),...(ph.length?['----------',...ph]:[])].join('\n')}
 function receiptModal(arg){const x=typeof arg==='object'?arg:S.bookings.find(b=>b.id===arg);if(!x)return;let el=$('#rcm');if(!el){el=document.createElement('div');el.id='rcm';document.body.appendChild(el)}
  el.innerHTML=`<div class="noprint" id="rcBk" style="position:fixed;inset:0;background:#0009;z-index:58"></div><div style="position:fixed;inset:0;z-index:59;overflow:auto;padding:calc(12px + env(safe-area-inset-top,0px)) 10px 20px"><div id="rcWrap" style="max-width:380px;margin:auto">${receiptHTML(x)}<div class="noprint tabs" style="margin-top:10px;justify-content:center;background:var(--card);padding:10px;border-radius:14px"><button id="rcP">🖨️ طباعة</button><button class="g" id="rcI">📷 حفظ كصورة</button><a class="btn" style="background:#25D366" target="_blank" rel="noopener" href="https://wa.me/${waNum(x.phone)}?text=${encodeURIComponent(receiptText(x))}">💬 إرسال للمستأجر</a><button class="o" id="rcC">📋 نسخ النص</button><button class="r" id="rcX">إغلاق</button></div></div></div>`;
  const close=()=>{el.innerHTML=''};$('#rcX').onclick=close;$('#rcBk').onclick=close;
