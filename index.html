@@ -54,12 +54,13 @@ a.btn{text-decoration:none;display:inline-block}
 #wm{position:fixed;inset:-25%;z-index:5;pointer-events:none;opacity:.08;display:flex;flex-wrap:wrap;gap:60px 80px;transform:rotate(-25deg);align-content:center;justify-content:center}
 #wm span{display:flex;align-items:center;gap:8px;font-size:22px;font-weight:700;color:var(--tx);white-space:nowrap}#wm img{width:36px;height:36px;border-radius:8px}
 summary{cursor:pointer;font-weight:700;padding:8px 0}
+@media print{body{background:#fff!important}body>*:not(#rcm){display:none!important}#rcm>div:first-child{display:none!important}#rcm>div:nth-child(2){position:static!important;padding:0!important;overflow:visible!important}#rcWrap{max-width:none!important}.noprint{display:none!important}#rcPaper{border:0!important;border-radius:0!important}@page{margin:8mm}}
 </style>
 </head>
 <body>
 <div class="wrap" id="app"><p>جارٍ التحميل…</p></div>
 <script>window.__FB=1</script>
-<style>#pub,#exp,#aiD,#aiN,#aiC,#aiR,#hAI{display:none!important}</style>
+<style>#pub,#exp,#aiD,#aiN,#aiC,#aiR,#hAI,#aiRc{display:none!important}</style>
 <script type="application/json" id="snap">{}</script>
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
@@ -155,10 +156,14 @@ function renderAdmin(){
  <td>${stBadge(x)}</td><td>${remain(x)}</td>
  <td><select data-id="${x.id}" data-f="pay"><option value="none"${x.pay==='none'?' selected':''}>لم يدفع</option><option value="deposit"${x.pay==='deposit'?' selected':''}>عربون</option><option value="full"${x.pay==='full'?' selected':''}>كامل المبلغ</option></select><br><select data-id="${x.id}" data-f="method">${['نقد','تحويل','مدى','أخرى'].map(o=>`<option${x.method===o?' selected':''}>${o}</option>`).join('')}</select></td>
  <td><select data-id="${x.id}" data-f="ins"><option value="no"${x.ins!=='paid'?' selected':''}>لم يُستلم</option><option value="paid"${x.ins==='paid'?' selected':''}>مُستلم</option></select></td>
- <td><button class="g" data-id="${x.id}" data-s="approved">قبول</button> <button class="r" data-id="${x.id}" data-s="rejected">رفض</button> <a class="btn" style="padding:6px 10px" target="_blank" href="https://wa.me/${waNum(x.phone)}?text=${encodeURIComponent(waMsg(x.price,x.deposit,x.insurance,x.date))}">واتساب</a> <button class="o" data-rate="${x.id}">⭐ طلب تقييم</button> <button class="o" data-prev="${x.id}">زائر سابق</button> <button class="o" data-pm="${x.id}">💳 الإيصالات</button></td></tr>`).join('');
+ <td><button class="g" data-id="${x.id}" data-s="approved">قبول</button> <button class="r" data-id="${x.id}" data-s="rejected">رفض</button> <a class="btn" style="padding:6px 10px" target="_blank" href="https://wa.me/${waNum(x.phone)}?text=${encodeURIComponent(waMsg(x.price,x.deposit,x.insurance,x.date))}">واتساب</a> <button class="o" data-rate="${x.id}">⭐ طلب تقييم</button> <button class="o" data-prev="${x.id}">زائر سابق</button> <button class="o" data-pm="${x.id}">💳 الإيصالات</button> <button class="o" data-rc="${x.id}">🖨️ إيصال حجز</button></td></tr>`).join('');
  const mf=S.mf||{},mfv=k=>esc(mf[k]??'');
  app.innerHTML=`${brand()}<h2>لوحة التحكم <span class="tag" style="background:var(--rd);color:#fff">🔔 ${notes.length}</span></h2>
  <div class="tabs"><button class="o" onclick="location.hash='#book'">معاينة صفحة الزبون</button><button onclick="exportXlsx()">تصدير إلى Excel</button><button class="g" id="pub">🚀 نشر صفحة الزبائن (بدون تسجيل)</button><button class="g" id="calB">📆 تقويم الحجوزات</button><button class="o" id="snd">🔔 صوت التنبيه</button><button class="o" id="copy">نسخ رابط الزبائن</button></div>
+ <div class="grid" style="margin-top:12px">
+ <div class="card stat"><b>${S.visits.length}</b>الزوار</div><div class="card stat"><b>${S.likes.length}</b>الإعجابات</div>
+ <div class="card stat"><b>${nw.length}</b>طلبات جديدة</div><div class="card stat"><b>${S.bookings.filter(x=>x.status==='approved').length}</b>موافق (الكل)</div>
+ <div class="card stat"><b>${rejN+noAns}</b>رافضون / غير مهتمين</div></div>
  <div class="card"><h3>🏷️ هوية المخيم</h3>
  <label>اسم المخيم</label><input id="nm0" value="${esc(st.name)}">
  <label>الشعار</label><input type="file" id="lg" accept="image/*">
@@ -167,10 +172,6 @@ function renderAdmin(){
  <div class="card"><h3>🖼️ خلفية فقاعة اسم المخيم</h3>${st.heroBg?`<img loading="lazy" decoding="async" src="${esc(st.heroBg)}" alt="" style="width:100%;height:110px;object-fit:cover;border-radius:14px;margin-bottom:8px">`:''}<div class="tabs" style="margin-bottom:10px"><button class="o" data-hp="dunes">🏜️ كثبان</button><button class="o" data-hp="night">🌙 ليل</button><button class="o" data-hp="oasis">🌴 واحة</button><button class="ai" id="hAI">✨ صمّم بالذكاء الاصطناعي</button><button class="r" id="hRm">إزالة</button></div><label>أو ارفع صورة المخيم من جهازك</label><input type="file" id="hUp" accept="image/*"></div>
  <div class="card"><h3>🎨 تجميل الموقع</h3><div class="grid"><div><label>اللون الأساسي</label><input id="ac" type="color" value="${st.ac}"></div><div><label>اللون الثانوي</label><input id="ac2" type="color" value="${st.ac2}"></div></div>
  <div class="tabs"><button class="o" data-pre="#b5651d,#2f6f4f">صحراوي</button><button class="o" data-pre="#0e7490,#1d4ed8">بحري</button><button class="o" data-pre="#7c2d12,#a16207">ترابي</button><button class="o" data-pre="#be185d,#7c3aed">أنيق</button><button class="ai" id="aiC">✨ ألوان بالذكاء الاصطناعي</button></div></div>
- <div class="grid" style="margin-top:12px">
- <div class="card stat"><b>${S.visits.length}</b>الزوار</div><div class="card stat"><b>${S.likes.length}</b>الإعجابات</div>
- <div class="card stat"><b>${nw.length}</b>طلبات جديدة</div><div class="card stat"><b>${S.bookings.filter(x=>x.status==='approved').length}</b>موافق (الكل)</div>
- <div class="card stat"><b>${rejN+noAns}</b>رافضون / غير مهتمين</div></div>
  <div class="card"><h3>🔔 الإشعارات والتنبيهات</h3>${notes.map(n=>`<div class="note ${n[0]}">${esc(n[1])}</div>`).join('')||'<p>لا توجد تنبيهات.</p>'}</div>
  <div class="card"><h3>➕ إضافة حجز يدوي (من واتساب)</h3><div class="grid">
  <div><label>الاسم</label><input id="mn" value="${mfv('mn')}"></div><div><label>واتساب</label><input id="mp" type="tel" value="${mfv('mp')}"></div>
@@ -188,6 +189,11 @@ function renderAdmin(){
  <div class="card"><h3>📜 التعليمات والإرشادات (تظهر للزبائن)</h3><p style="color:var(--mu)">سطر لكل تعليمة: النظافة، عدم التخريب، الألعاب النارية والهوائية…</p>
  <textarea id="nt" style="min-height:170px">${esc((st.notes||[]).join('\n'))}</textarea><button class="ai" id="aiR">✨ اقترح تعليمات</button> <button id="svR" class="g">💾 حفظ التعليمات</button></div>
  <div class="card"><h3>📍 الموقع والتواصل</h3><label>رابط موقع المخيم (خرائط جوجل)</label><input id="loc" value="${esc(st.loc)}" dir="ltr"><div class="grid"><div><label>رقم التواصل</label><input id="tel" value="${esc(st.tel)}" type="tel"></div><div><label>رقم الحارس</label><input id="guard" value="${esc(st.guard)}" type="tel"></div></div><label>رسالة الترحيب في واتساب (استخدم {name} لاسم المخيم)</label><textarea id="wl" style="min-height:70px">${esc(st.welcome)}</textarea><label>رابط التقييم على خرائط جوجل (اختياري)</label><input id="greview" value="${esc(st.greview)}" dir="ltr"></div>
+ <div class="card"><h3>🧾 الإيصال — عبارات أسفل الإيصال</h3>
+ <p style="color:var(--mu)">تُطبع هذه العبارات في أسفل كل إيصال، بعد رقم التحويل البنكي (إن كان الدفع تحويلًا). اكتب سطرًا لكل عبارة، أو اختر من العبارات الجاهزة.</p>
+ <textarea id="rcp" style="min-height:110px">${esc(rcLines().join('\n'))}</textarea>
+ <label>عبارة جاهزة</label><select id="rcBank"><option value="">— اختر —</option>${RC_BANK.map((t,i)=>`<option value="${i}">${esc(t)}</option>`).join('')}</select>
+ <div class="tabs"><button class="o" id="rcAdd">➕ أضف العبارة المختارة</button><button class="ai" id="aiRc">✨ اقترح عبارات بالذكاء الاصطناعي</button></div></div>
  <div class="card"><h3>🤝 الزبائن السابقون (${S.prevList.length})</h3>
  <p style="color:var(--mu)">أسعار خاصة بالزبون السابق: اكتب السعر السابق (يظهر مشطوبًا للزبون) وبجانبه السعر الجديد. الخانة الفارغة تعني استخدام السعر الاعتيادي، أو النسبة أدناه.</p>
  <div class="tbl"><table><tr><th>البند</th><th>السعر السابق</th><th>السعر الجديد</th></tr>
@@ -236,7 +242,10 @@ function renderAdmin(){
  const mPH=()=>{const pf=priceFor($('#md').value||todayL(),+$('#ms').value);$('#mpr').placeholder='السعر: '+pf.p;$('#mdp').placeholder='العربون: '+pf.dep;$('#mis').placeholder='التأمين: '+pf.ins;$('#msnW').style.display=$('#ms').value==='1'?'':'none'};
  $('#ms').addEventListener('change',mPH);$('#md').addEventListener('change',mPH);mPH();
  document.querySelectorAll('#dPrev').forEach(d=>d.addEventListener('toggle',()=>{S.openPrev=d.open}));
- {const SKIP=['هوية المخيم','تجميل الموقع','الموقع والتواصل','الزبائن السابقون','رابط صفحة','الأسعار الافتراضية'];app.querySelectorAll('.card').forEach(c=>{const h=c.querySelector('h3');if(h&&SKIP.some(t=>h.textContent.includes(t))&&!c.querySelector('.svx')){const b=document.createElement('button');b.className='g svx';b.style.cssText='width:100%;margin-top:10px';b.textContent='💾 حفظ التعديلات';b.onclick=()=>$('#sv').click();c.appendChild(b)}})}
+ {const SKIP=['الإيصال','هوية المخيم','تجميل الموقع','الموقع والتواصل','الزبائن السابقون','رابط صفحة','الأسعار الافتراضية'];app.querySelectorAll('.card').forEach(c=>{const h=c.querySelector('h3');if(h&&SKIP.some(t=>h.textContent.includes(t))&&!c.querySelector('.svx')){const b=document.createElement('button');b.className='g svx';b.style.cssText='width:100%;margin-top:10px';b.textContent='💾 حفظ التعديلات';b.onclick=()=>$('#sv').click();c.appendChild(b)}})}
+ $('#rcAdd').onclick=()=>{const i=$('#rcBank').value;if(i==='')return;const t=RC_BANK[+i],ta=$('#rcp');if(!ta.value.split('\n').map(x=>x.trim()).includes(t))ta.value=(ta.value.trim()?ta.value.trim()+'\n':'')+t};
+ $('#aiRc').onclick=async()=>{const t=await ai('اكتب 5 عبارات قصيرة بالعربية الفصحى في حب الوطن والدفاع عنه، مناسبة لتذييل إيصال حجز، كل عبارة في سطر بدون ترقيم ولا مقدمات.');if(t)$('#rcp').value=t.trim()};
+ app.querySelectorAll('[data-rc]').forEach(e=>e.onclick=()=>receiptModal(e.dataset.rc));
  $('#aq').onkeydown=e=>{if(e.key==='Enter')askAI($('#aq').value.trim())};
  $('#pub').onclick=async()=>{const a=await claude.use('artifact');if(!a){alert('النشر غير متاح');return}if(!confirm('سيُحدَّث الرابط ليعرض الإعدادات والصور الحالية للزائر بدون تسجيل. متابعة؟'))return;try{const c=document.documentElement.cloneNode(true);c.querySelector('#app').innerHTML='<p>جارٍ التحميل…</p>';c.removeAttribute('style');c.querySelector('#snap').textContent=JSON.stringify({settings:S.settings,media:S.media}).replace(/</g,'\\u003c');await a.publish('<!DOCTYPE html>\n'+c.outerHTML)}catch(x){alert('تعذر النشر: '+(x.message||x.code||''))}};
  bindSeason();
@@ -280,7 +289,7 @@ function renderAdmin(){
  app.querySelectorAll('[data-mv]').forEach(e=>e.onclick=async()=>{const [id,d,n]=e.dataset.mv.split('|');const arr=srt(S.media.filter(secOf(+n)));const i=arr.findIndex(x=>x.id===id),j=i+ +d;if(j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];for(let k=0;k<arr.length;k++)await S.db.doc('media/'+arr[k].id).update({ord:k})});
 }
 async function exportXlsx(){
- const data=S.bookings.map(x=>({'الاسم':x.name,'واتساب':x.phone,'الأقسام':x.sections,'رقم القسم':x.secNum||'','التاريخ الميلادي':x.date,'التاريخ الهجري':x.hijri,'السعر':x.price,'السعر المقترح':x.offer||'','زائر سابق':x.prevOk?'نعم (مؤكد)':x.prevClaim?'يدّعي':'لا','تأكيد الأدمن':x.prevCheck||'','المتبقي':remainNum(x),'طريقة الدفع':x.method||'','الخدمات':(x.services||[]).join('، '),'ملاحظات':x.note||'','الأرشفة':archState(x),'مبلغ مدفوع':x.depAmt||'','مبلغ التأمين':x.insAmt||'','طريقة التأمين':x.insMethod||'','العربون':x.deposit,'التأمين':x.insurance,'الحالة':x.status,'الدفع':x.pay,'استلام التأمين':x.ins}));
+ const data=S.bookings.map(x=>({'الاسم':x.name,'واتساب':x.phone,'الأقسام':x.sections,'رقم القسم':x.secNum||'','التاريخ الميلادي':x.date,'التاريخ الهجري':x.hijri,'السعر':x.price,'السعر المقترح':x.offer||'','زائر سابق':x.prevOk?'نعم (مؤكد)':x.prevClaim?'يدّعي':'لا','تأكيد الأدمن':x.prevCheck||'','المتبقي':remainNum(x),'طريقة الدفع':x.method||'','الخدمات':(x.services||[]).join('، '),'ملاحظات':x.note||'','الأرشفة':archState(x),'مبلغ مدفوع':x.depAmt||'','مبلغ التأمين':x.insAmt||'','طريقة التأمين':x.insMethod||'','رقم تحويل العربون':x.depRef||'','رقم تحويل التأمين':x.insRef||'','العربون':x.deposit,'التأمين':x.insurance,'الحالة':x.status,'الدفع':x.pay,'استلام التأمين':x.ins}));
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'الحجوزات');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(S.prevList.map(c=>({'الاسم':c.n,'الرقم':c.p}))),'الزبائن السابقون');
  const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
  try{const d=await claude.use('downloads');if(!d)throw 0;await d.save({filename:'bookings.xlsx',data:new Blob([out],{type:'application/octet-stream'})})}catch(e){alert('التنزيل غير متاح في هذا العرض')}
@@ -291,7 +300,7 @@ let step='ask',done='';
 const waNum=p=>{let d=String(p||'').replace(/\D/g,'');if(d.startsWith('00'))d=d.slice(2);if(d.startsWith('0'))d='966'+d.slice(1);else if(d.length===9)d='966'+d;return d};
 const safe=u=>/^https?:\/\//.test(u||'')?u:'';
 const hashP=async p=>{const b=new TextEncoder().encode('camp:'+String(p).replace(/\D/g,'').slice(-9));const h=await crypto.subtle.digest('SHA-256',b);return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join('')};
-const extra=async()=>({loc:safe($('#loc').value.trim()),tel:$('#tel').value.trim(),guard:$('#guard').value.trim(),greview:safe($('#greview').value.trim()),prevDisc:+$('#pd').value||0,prevO1:+$('#po1').value||0,prevN1:+$('#pn1').value||0,prevO2:+$('#po2').value||0,prevN2:+$('#pn2').value||0,prevOD:+$('#poD').value||0,prevND:+$('#pnD').value||0,prevOI:+$('#poI').value||0,prevNI:+$('#pnI').value||0,welcome:$('#wl').value.trim()||'مرحبًا بك في {name} 🌿'});
+const extra=async()=>({loc:safe($('#loc').value.trim()),tel:$('#tel').value.trim(),guard:$('#guard').value.trim(),greview:safe($('#greview').value.trim()),prevDisc:+$('#pd').value||0,rcPhrases:($('#rcp')?$('#rcp').value.split('\n').map(x=>x.trim()).filter(Boolean):rcLines()),prevO1:+$('#po1').value||0,prevN1:+$('#pn1').value||0,prevO2:+$('#po2').value||0,prevN2:+$('#pn2').value||0,prevOD:+$('#poD').value||0,prevND:+$('#pnD').value||0,prevOI:+$('#poI').value||0,prevNI:+$('#pnI').value||0,welcome:$('#wl').value.trim()||'مرحبًا بك في {name} 🌿'});
 const setPrev=async cur=>{await S.db.doc('admin/prevlist').set({list:cur});S.prevList=cur;const h=[];for(const c of cur)h.push(await hashP(c.p));await saveSt({prev:h})};
 const k9=p=>String(p).replace(/\D/g,'').slice(-9);
 const addPrev=async items=>{const cur=S.prevList.slice();items.forEach(i=>{if(k9(i.p).length>=7&&!cur.some(c=>k9(c.p)===k9(i.p)))cur.push({n:i.n||'',p:String(i.p).trim(),c:i.c||1})});await setPrev(cur)};
@@ -331,7 +340,7 @@ function bindPanels(){const t=k=>{PANEL=PANEL===k?'':k;$('#pnR').classList.toggl
 function newDocs(key,q,fn){if(S[key]){q.docs.forEach(d=>{if(!S[key].has(d.id))fn(dd(d))})}S[key]=new Set(q.docs.map(d=>d.id))}
 function toast(t,m,c){const d=document.createElement('div');d.style.cssText='position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:12px;right:12px;max-width:380px;margin:auto;background:var(--card);border:2px solid '+c+';border-radius:16px;padding:12px 14px;z-index:60;box-shadow:0 8px 30px #0005;animation:pop .4s;cursor:pointer';d.innerHTML='<b>'+t+'</b><br>'+esc(m)+'<br><small>اضغط للمراجعة</small>';d.onclick=()=>{d.remove();location.hash='#admin';window.scrollTo(0,0)};document.body.appendChild(d);setTimeout(()=>d.remove(),8000);try{if(localStorage.getItem('snd')==='1'){const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator();o.connect(a.destination);o.frequency.value=880;o.start();setTimeout(()=>o.stop(),180)}}catch(e){}}
 const stBadge=x=>{const m={approved:['#16a34a','✅ تم الحجز'],rejected:['#dc2626','❌ تم الإلغاء'],new:['#f59e0b','🟡 لم يتم التأكيد']}[x.status]||['#888','—'];return `<span class="tag" style="background:${m[0]};color:#fff;padding:4px 10px">${m[1]}</span>`};
-const remainNum=x=>Math.max(0,(+x.price||0)-(x.pay==='full'?(+x.price||0):x.pay==='deposit'?(+x.deposit||0):0));
+const remainNum=x=>Math.max(0,(+x.price||0)-(x.pay==='full'?(+x.price||0):x.pay==='deposit'?(+(x.depAmt??x.deposit)||0):0));
 const remain=x=>remainNum(x)+' ريال';
 const prevCount=p=>{const e=S.prevList.find(c=>k9(c.p)===k9(p));return e?(e.c||1):0};
 const histBadge=x=>{const b=prevCount(x.phone)-(x.counted?1:0);return b>0?` <span class="tag" style="background:#dbeafe;color:#1e3a8a">🔁 سبق له الحجز ${b} مرة</span>`:''};
@@ -365,7 +374,7 @@ const calDetail=b=>{const paid=b.pay==='full'?'سدّد كامل المبلغ':b
 🔒 العربون: ${b.deposit||0} — 🛡️ التأمين: ${b.insurance||0} (${b.ins==='paid'?'مُستلم':'لم يُستلم'})<br>
 💳 الدفع: ${paid} — المتبقي: ${remain(b)}${b.method?' — '+esc(b.method):''}<br>
 ${(b.services||[]).length?'🛎️ الخدمات: '+b.services.map(esc).join('، ')+'<br>':''}
-${rcImg(b)}<label>📝 ملاحظات</label><textarea id="cn${b.id}" style="min-height:60px">${esc(b.note||'')}</textarea><button class="g" data-ns="${b.id}">حفظ الملاحظة</button></div>`};
+${rcImg(b)}<label>📝 ملاحظات</label><textarea id="cn${b.id}" style="min-height:60px">${esc(b.note||'')}</textarea><button class="g" data-ns="${b.id}">حفظ الملاحظة</button> <button class="o" data-rc="${b.id}">🖨️ إيصال</button></div>`};
 function renderCal(){let el=$('#cal');if(!el){el=document.createElement('div');el.id='cal';document.body.appendChild(el)}
 const a=document.activeElement;if(a&&el.contains(a)&&/INPUT|TEXTAREA/.test(a.tagName))return;
 const now=new Date(),y=S.calY??now.getFullYear(),m=S.calM??now.getMonth();S.calY=y;S.calM=m;
@@ -385,9 +394,10 @@ $('#calX').onclick=()=>{S.calOpen=false;el.innerHTML=''};
 $('#calP').onclick=()=>{S.calM--;if(S.calM<0){S.calM=11;S.calY--}renderCal()};
 $('#calN').onclick=()=>{S.calM++;if(S.calM>11){S.calM=0;S.calY++}renderCal()};
 el.querySelectorAll('[data-d]').forEach(c=>c.onclick=()=>{S.calSel=c.dataset.d;renderCal()});
-el.querySelectorAll('[data-ns]').forEach(e=>e.onclick=async()=>{try{await S.db.doc('bookings/'+e.dataset.ns).update({note:$('#cn'+e.dataset.ns).value.trim()});alert('تم حفظ الملاحظة')}catch(x){alert('تعذر الحفظ')}})}
+el.querySelectorAll('[data-rc]').forEach(e=>e.onclick=()=>receiptModal(e.dataset.rc));
+ el.querySelectorAll('[data-ns]').forEach(e=>e.onclick=async()=>{try{await S.db.doc('bookings/'+e.dataset.ns).update({note:$('#cn'+e.dataset.ns).value.trim()});alert('تم حفظ الملاحظة')}catch(x){alert('تعذر الحفظ')}})}
 function waPanel(){const t=waShare(),e=encodeURIComponent(t);return `<div class="note"><p>نص الرسالة:</p><textarea id="waTx" style="min-height:90px">${esc(t)}</textarea><div class="tabs"><button id="waCp">📋 نسخ الرسالة</button>${navigator.share?'<button id="waSh" class="g">📤 مشاركة</button>':''}<a class="btn g" target="_blank" rel="noopener" href="https://wa.me/?text=${e}">فتح واتساب</a><a class="btn" style="background:transparent;color:var(--tx);border:1px solid var(--bd)" href="whatsapp://send?text=${e}">فتح تطبيق واتساب</a></div><p style="color:var(--mu)">إن لم يفتح واتساب، انسخ الرسالة والصقها يدويًا.</p></div>`}
-const rcImg=b=>{const im=(t,u)=>u?`<div>🧾 ${t}:<br><img loading="lazy" decoding="async" src="${esc(u)}" alt="" style="width:100%;max-height:180px;object-fit:contain;cursor:zoom-in" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'180px':'none'"></div>`:'';return (b.depMethod?`💵 الدفع: ${esc(b.depMethod)}${b.depAmt?' — '+b.depAmt+' ريال':''}<br>`:'')+(b.insMethod&&b.ins==='paid'?`🛡️ التأمين: ${esc(b.insMethod)}${b.insAmt?' — '+b.insAmt+' ريال':''}<br>`:'')+im('إيصال العربون',b.rcDep)+im('إيصال التأمين',b.rcIns)};
+const rcImg=b=>{const im=(t,u)=>u?`<div>🧾 ${t}:<br><img loading="lazy" decoding="async" src="${esc(u)}" alt="" style="width:100%;max-height:180px;object-fit:contain;cursor:zoom-in" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'180px':'none'"></div>`:'';return (b.depMethod?`💵 الدفع: ${esc(b.depMethod)}${b.depAmt?' — '+b.depAmt+' ريال':''}<br>`:'')+(b.insMethod&&b.ins==='paid'?`🛡️ التأمين: ${esc(b.insMethod)}${b.insAmt?' — '+b.insAmt+' ريال':''}<br>`:'')+(b.depRef?`🔢 رقم تحويل العربون: ${esc(b.depRef)}<br>`:'')+(b.insRef?`🔢 رقم تحويل التأمين: ${esc(b.insRef)}<br>`:'')+im('إيصال العربون',b.rcDep)+im('إيصال التأمين',b.rcIns)};
 async function setStatus(x,status,extra){const u={...extra,status};if(status==='approved'&&!x.counted){const cur=S.prevList.map(c=>({...c})),k=cur.findIndex(c=>k9(c.p)===k9(x.phone));if(k>=0)cur[k].c=(cur[k].c||1)+1;else cur.push({n:x.name,p:x.phone,c:1});await setPrev(cur);u.counted=true}await S.db.doc('bookings/'+x.id).update(u)}
 function payModal(id){const x=S.bookings.find(b=>b.id===id);if(!x)return;let el=$('#pm');if(!el){el=document.createElement('div');el.id='pm';document.body.appendChild(el)}
 const pay=x.pay&&x.pay!=='none'?x.pay:'deposit',opt=(v,a)=>a.map(o=>`<option${o===v?' selected':''}>${o}</option>`).join(''),appr=x.status==='approved';
@@ -398,26 +408,28 @@ el.innerHTML=`<div style="position:fixed;inset:0;background:#0009;z-index:55;dis
 <label>حالة الدفع</label><select id="pmPay"><option value="none"${pay==='none'?' selected':''}>لم يدفع</option><option value="deposit"${pay==='deposit'?' selected':''}>عربون</option><option value="full"${pay==='full'?' selected':''}>كامل المبلغ</option></select>
 <label>المبلغ المدفوع (ريال)</label><input id="pmAmt" type="number" value="${x.depAmt??(pay==='full'?x.price:(x.deposit||0))}">
 <label>طريقة الدفع</label><select id="pmMet">${opt(x.depMethod||'كاش',['كاش','تحويل'])}</select>
+<label>رقم التحويل البنكي (عند اختيار تحويل)</label><input id="pmRef" dir="ltr" value="${esc(x.depRef||'')}">
 <label>صورة إيصال العربون (للتحويل)</label><input type="file" id="pmRc" accept="image/*">${img(x.rcDep)}
 <h4>التأمين</h4>
 <label>حالة التأمين</label><select id="pmIns"><option value="no"${x.ins!=='paid'?' selected':''}>لم يُستلم</option><option value="paid"${x.ins==='paid'?' selected':''}>مُستلم</option></select>
 <label>مبلغ التأمين (ريال)</label><input id="pmIA" type="number" value="${x.insAmt??x.insurance??0}">
 <label>طريقة دفع التأمين</label><select id="pmIM">${opt(x.insMethod||'كاش',['كاش','تحويل'])}</select>
+<label>رقم تحويل التأمين البنكي (عند اختيار تحويل)</label><input id="pmIRef" dir="ltr" value="${esc(x.insRef||'')}">
 <label>صورة إيصال التأمين (للتحويل)</label><input type="file" id="pmIR" accept="image/*">${img(x.rcIns)}
 <div class="tabs" style="margin-top:10px"><button class="g" id="pmOk">${appr?'💾 حفظ':'✅ تأكيد الحجز'}</button><button class="o" id="pmX">إلغاء</button></div></div></div>`;
 $('#pmX').onclick=()=>{el.innerHTML=''};
-$('#pmOk').onclick=async()=>{const b=$('#pmOk');b.disabled=true;try{const as=await claude.use('assets');const up=async f=>f&&as?(await as.upload(f,{max:900,q:.6,cap:280000})).url:null;
+$('#pmOk').onclick=async()=>{const b=$('#pmOk');if($('#pmMet').value==='تحويل'&&$('#pmPay').value!=='none'&&!$('#pmRef').value.trim()&&!confirm('اخترت «تحويل» دون كتابة رقم التحويل البنكي. هل تتابع بدونه؟'))return;if($('#pmIns').value==='paid'&&$('#pmIM').value==='تحويل'&&!$('#pmIRef').value.trim()&&!confirm('التأمين بتحويل دون رقم تحويل بنكي. هل تتابع بدونه؟'))return;b.disabled=true;try{const as=await claude.use('assets');const up=async f=>f&&as?(await as.upload(f,{max:900,q:.6,cap:280000})).url:null;
 const r1=await up($('#pmRc').files[0]),r2=await up($('#pmIR').files[0]);
-const dm=$('#pmMet').value,u={pay:$('#pmPay').value,depAmt:+$('#pmAmt').value||0,depMethod:dm,method:dm==='كاش'?'نقد':'تحويل',ins:$('#pmIns').value,insAmt:+$('#pmIA').value||0,insMethod:$('#pmIM').value};
+const dm=$('#pmMet').value,u={pay:$('#pmPay').value,depAmt:+$('#pmAmt').value||0,depMethod:dm,method:dm==='كاش'?'نقد':'تحويل',ins:$('#pmIns').value,insAmt:+$('#pmIA').value||0,insMethod:$('#pmIM').value,depRef:$('#pmRef').value.trim(),insRef:$('#pmIRef').value.trim()};
 if(r1)u.rcDep=r1;if(r2)u.rcIns=r2;
 if(appr)await S.db.doc('bookings/'+x.id).update(u);else await setStatus(x,'approved',u);
-el.innerHTML=''}catch(e){alert('تعذر الحفظ: '+(e.code||e.message));b.disabled=false}}}
+el.innerHTML='';if(!appr)receiptModal({...x,...u})}catch(e){alert('تعذر الحفظ: '+(e.code||e.message));b.disabled=false}}}
 const todayL=()=>new Date(Date.now()-new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
 const archState=x=>{const past=x.date&&x.date<todayL();if(x.status==='rejected')return 'الأرشيف: مرفوض';if(x.status==='new'&&past)return 'الأرشيف: انتهى بدون تأكيد';if(x.status==='approved'&&past)return 'زبائن سابقون';return ''};
 function archCards(){const A=S.bookings.filter(x=>archState(x).startsWith('الأرشيف')),Dn=S.bookings.filter(x=>archState(x)==='زبائن سابقون').sort((a,b)=>String(b.date).localeCompare(String(a.date)));
 const row=(x,a)=>`<tr><td>${esc(x.name)}</td><td dir="ltr">${esc(x.phone)}</td><td>${esc(x.date)}</td><td>${secLabel(x)}</td><td>${x.price}</td>${a}</tr>`;
 return `<div class="card"><h3>🗄️ الأرشيف (${A.length})</h3><p style="color:var(--mu)">يُنقل إليه تلقائيًا كل حجز مرفوض أو انتهى يومه دون تأكيد.</p><div class="tbl"><table><tr><th>الاسم</th><th>واتساب</th><th>التاريخ</th><th>الأقسام</th><th>السعر</th><th>السبب</th><th></th></tr>${A.map(x=>row(x,`<td>${esc(archState(x).replace('الأرشيف: ',''))}</td><td>${x.status==='rejected'?`<button class="o" data-restore="${x.id}">↩️ استعادة</button> `:''}<button class="r" data-adel="${x.id}">حذف</button></td>`)).join('')||'<tr><td colspan="7">الأرشيف فارغ</td></tr>'}</table></div></div>
-<div class="card"><h3>👥 زبائن سابقون — حجوزات منتهية (${Dn.length})</h3><p style="color:var(--mu)">يُنقل إليه تلقائيًا كل حجز مؤكد انتهى يومه.</p><div class="tbl"><table><tr><th>الاسم</th><th>واتساب</th><th>التاريخ</th><th>الأقسام</th><th>السعر</th><th>المتبقي</th><th>ملاحظات</th></tr>${Dn.map(x=>row(x,`<td>${remain(x)}</td><td>${esc(x.note||'')}</td>`)).join('')||'<tr><td colspan="7">لا حجوزات منتهية بعد</td></tr>'}</table></div></div>`}
+<div class="card"><h3>👥 زبائن سابقون — حجوزات منتهية (${Dn.length})</h3><p style="color:var(--mu)">يُنقل إليه تلقائيًا كل حجز مؤكد انتهى يومه.</p><div class="tbl"><table><tr><th>الاسم</th><th>واتساب</th><th>التاريخ</th><th>الأقسام</th><th>السعر</th><th>المتبقي</th><th>ملاحظات</th><th></th></tr>${Dn.map(x=>row(x,`<td>${remain(x)}</td><td>${esc(x.note||'')}</td><td><button class="o" data-rc="${x.id}">🖨️ إيصال</button></td>`)).join('')||'<tr><td colspan="7">لا حجوزات منتهية بعد</td></tr>'}</table></div></div>`}
 const secLabel=b=>b.sections===2?'القسمان':('قسم'+(b.secNum?' '+b.secNum:''));
 function prevAdj(pr,n){const st=S.settings,k=n===2?['prevN2','prevO2']:['prevN1','prevO1'];
  const np=+st[k[0]]>0?+st[k[0]]:Math.round(pr.p*(100-(st.prevDisc||0))/100),op=+st[k[1]]>0?+st[k[1]]:pr.p;
@@ -474,6 +486,33 @@ function localAI(q0){
  const s=stats();
  return header+'لم أفهم السؤال بدقة، وهذا ملخص سريع ('+period[1]+'):\n• حجوزات مؤكدة: '+s.bk.length+' بقيمة '+fm(s.booked)+' ريال\n• مقبوض: '+fm(s.rc)+' — مصروفات: '+fm(s.exs)+'\n\nيمكنني الإجابة عن: الدخل والصافي، المصروفات، العملاء الأكثر حجزًا، الأيام الأكثر طلبًا، الحجوزات غير المسددة، السعر المقترح لنهاية الأسبوع، التقييمات، الزوار، المرفوضين. وأضف «الشهر الماضي» أو «الإجمالي» لتغيير الفترة.'}
 let CALC={};
+const RC_BANK=['الوطن غالٍ، نحبّه ونصونه ونذود عنه بكل ما نملك.','دام عزّك يا وطن، وسلم حماتك الأوفياء.','حب الوطن عهدٌ ووفاء، وحمايته شرفٌ وفخر.','وطنٌ نحميه ويحمينا، وعلى ترابه نعيش بأمن وأمان.','نفتخر بوطننا، ونشكر رجاله المرابطين على الثغور.','عزّ الوطن من عزّ أبنائه، فلنكن له سندًا وفخرًا.','الأوطان تُبنى بالإخلاص وتُحمى بالأوفياء.'];
+const RC_DEF=[RC_BANK[0],RC_BANK[1]];
+const rcLines=()=>Array.isArray(S.settings.rcPhrases)?S.settings.rcPhrases:RC_DEF;
+function rcData(x){const price=+x.price||0,pay=x.pay||'none',dA=+(x.depAmt??x.deposit)||0,iA=+(x.insAmt??x.insurance)||0,d=x.date?dates(x.date):{g:'',h:''};
+ return {price,paidDep:pay==='full'?price:pay==='deposit'?dA:0,insAmt:iA,insPaid:x.ins==='paid',rem:remainNum(x),g:d.g,h:d.h,dm:x.depMethod||(x.method==='تحويل'?'تحويل':x.method==='نقد'?'كاش':''),im:x.insMethod||'',dRef:x.depRef||'',iRef:x.insRef||'',no:'R-'+String(x.at||Date.now()).slice(-6)}}
+function rcTransfers(r){const t=[];if(r.paidDep>0&&r.dm==='تحويل')t.push(['رقم تحويل العربون',r.dRef]);if(r.insPaid&&r.im==='تحويل')t.push(['رقم تحويل التأمين',r.iRef]);return t}
+function receiptHTML(x){const r=rcData(x),st=S.settings,tr=rcTransfers(r),ph=rcLines(),hr='<div style="border-top:2px dashed #888;margin:10px 0"></div>',
+ ln=(a,b,k)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;${k?'font-weight:700;font-size:15px;border-bottom:2px solid #111':'border-bottom:1px dotted #b8b8b8'}"><span>${a}</span><span style="text-align:left">${b}</span></div>`;
+ return `<div id="rcPaper" dir="rtl" style="width:360px;max-width:100%;margin:auto;background:#fff;color:#111;padding:18px 16px;font-family:Tajawal,Tahoma,sans-serif;font-size:13px;line-height:1.7;border:1px solid #ccc;border-radius:6px">
+<div style="text-align:center">${st.logo?`<img src="${esc(st.logo)}" alt="" style="width:70px;height:70px;object-fit:cover;border-radius:14px">`:''}<div style="font-size:20px;font-weight:700;margin-top:4px">${esc(st.name)}</div><div style="font-size:14px">إيصال حجز</div></div>${hr}
+${ln('رقم الإيصال',r.no)}${ln('تاريخ الإصدار',esc(dates(todayL()).h))}
+${ln('اسم المستأجر',esc(x.name))}${ln('رقم الجوال','<span dir="ltr">'+esc(x.phone)+'</span>')}
+${ln('يوم الحجز',esc(r.g))}${ln('الموافق (هجري)',esc(r.h))}${ln('الأقسام',esc(secLabel(x)))}${hr}
+${ln('إجمالي السعر',fm(r.price)+' ريال')}${ln('العربون'+(r.paidDep>0&&r.dm?' ('+esc(r.dm)+')':''),r.paidDep>0?fm(r.paidDep)+' ريال':'لم يُستلم')}${ln('التأمين'+(r.insPaid&&r.im?' ('+esc(r.im)+')':''),fm(r.insAmt)+' ريال'+(r.insPaid?'':' (لم يُستلم)'))}${ln('المتبقي',fm(r.rem)+' ريال',1)}
+${tr.length?hr+tr.map(t=>ln(t[0],t[1]?'<span dir="ltr">'+esc(t[1])+'</span>':'<span style="display:inline-block;width:130px;border-bottom:1px dotted #333">&nbsp;</span>')).join('')+'<div style="font-size:11px;color:#555">يُسجَّل رقم التحويل البنكي حفظًا لحقوق الطرفين.</div>':''}
+${hr}<div style="display:flex;justify-content:space-between;font-size:12px"><span>توقيع المستلم: ________</span><span>توقيع المستأجر: ________</span></div>
+${ph.length?hr+'<div style="text-align:center;font-size:13px;font-weight:600">'+ph.map(esc).join('<br>')+'</div>':''}</div>`}
+function receiptText(x){const r=rcData(x),st=S.settings,tr=rcTransfers(r),ph=rcLines();
+ return [st.name+' — إيصال حجز','رقم الإيصال: '+r.no,'المستأجر: '+x.name,'الجوال: '+x.phone,'يوم الحجز: '+r.g,'الموافق: '+r.h,'الأقسام: '+secLabel(x),'----------','إجمالي السعر: '+fm(r.price)+' ريال','العربون: '+(r.paidDep>0?fm(r.paidDep)+' ريال'+(r.dm?' ('+r.dm+')':''):'لم يُستلم'),'التأمين: '+fm(r.insAmt)+' ريال'+(r.insPaid?(r.im?' ('+r.im+')':''):' (لم يُستلم)'),'المتبقي: '+fm(r.rem)+' ريال',...tr.map(t=>t[0]+': '+(t[1]||'................')),...(ph.length?['----------',...ph]:[])].join('\n')}
+function receiptModal(arg){const x=typeof arg==='object'?arg:S.bookings.find(b=>b.id===arg);if(!x)return;let el=$('#rcm');if(!el){el=document.createElement('div');el.id='rcm';document.body.appendChild(el)}
+ el.innerHTML=`<div class="noprint" id="rcBk" style="position:fixed;inset:0;background:#0009;z-index:58"></div><div style="position:fixed;inset:0;z-index:59;overflow:auto;padding:calc(12px + env(safe-area-inset-top,0px)) 10px 20px"><div id="rcWrap" style="max-width:380px;margin:auto">${receiptHTML(x)}<div class="noprint tabs" style="margin-top:10px;justify-content:center;background:var(--card);padding:10px;border-radius:14px"><button id="rcP">🖨️ طباعة</button><button class="g" id="rcI">📷 حفظ كصورة</button><a class="btn" style="background:#25D366" target="_blank" rel="noopener" href="https://wa.me/${waNum(x.phone)}?text=${encodeURIComponent(receiptText(x))}">💬 إرسال للمستأجر</a><button class="o" id="rcC">📋 نسخ النص</button><button class="r" id="rcX">إغلاق</button></div></div></div>`;
+ const close=()=>{el.innerHTML=''};$('#rcX').onclick=close;$('#rcBk').onclick=close;
+ $('#rcP').onclick=()=>{try{window.print()}catch(e){alert('تعذرت الطباعة من هذا المتصفح، استخدم «حفظ كصورة»')}};
+ $('#rcC').onclick=async()=>{const t=receiptText(x);try{await navigator.clipboard.writeText(t);alert('تم نسخ نص الإيصال')}catch(e){prompt('انسخ النص:',t)}};
+ $('#rcI').onclick=async()=>{try{if(!window.html2canvas)await new Promise((ok,no)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+  const cv=await html2canvas($('#rcPaper'),{scale:2,backgroundColor:'#ffffff',useCORS:true});const d=await claude.use('downloads');if(!d){alert('الحفظ غير متاح');return}
+  cv.toBlob(async b=>{try{await d.save({filename:'receipt-'+rcData(x).no+'.png',data:b})}catch(e){}},'image/png')}catch(e){alert('تعذر إنشاء الصورة، استخدم «طباعة» ثم احفظ كملف PDF')}}}
 function wm(){const t=`<span>${S.settings.logo?`<img loading="lazy" decoding="async" src="${S.settings.logo}" alt="">`:''}${esc(S.settings.name)}</span>`;return '<div id="wm">'+t.repeat(60)+'</div>'}
 const MN=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const opts=(a,ph)=>`<option value="">${ph}</option>`+a.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
