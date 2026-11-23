@@ -95,7 +95,7 @@ init();
 <script>
 const $=s=>document.querySelector(s), app=$('#app');
 const SNAP=(()=>{try{return JSON.parse($('#snap').textContent||'{}')}catch(e){return{}}})();
-const S={exp:[],prevList:[],ratings:[],db:null,user:null,uid:null,isAdmin:false,settings:{p1:300,p2:500,dep:100,ins:200,name:'مخيمي',logo:'',desc:'',ac:'#b5651d',ac2:'#2f6f4f',loc:'',tel:'',guard:'',greview:'',prevDisc:10,prev:[],welcome:'مرحبًا بك في {name} 🌿 يسعدنا خدمتك.',seasons:[],notes:['حافظ على نظافة المخيم وارمِ النفايات في الأماكن المخصصة.','يمنع التخريب أو إتلاف المرافق والأثاث، وسيُحاسَب المتسبب بالتعويض.','الألعاب النارية والألعاب الهوائية ممنوعة منعًا باتًا حفاظًا على السلامة.','الالتزام بالهدوء بعد الساعة 11 مساءً واحترام الجيران.','إطفاء النار بالكامل قبل المغادرة أو النوم.','التأمين يُسترد عند تسليم المخيم سليمًا ونظيفًا.']},bookings:[],visits:[],likes:[],media:[],liked:false,counter:null};
+const S={exp:[],prevList:[],ratings:[],db:null,user:null,uid:null,isAdmin:false,settings:{p1:300,p2:500,th1:700,th2:1300,fr1:700,fr2:1300,sa1:700,sa2:1300,dep:100,ins:200,name:'مخيمي',logo:'',desc:'',ac:'#b5651d',ac2:'#2f6f4f',loc:'',tel:'',guard:'',greview:'',prevDisc:10,prev:[],welcome:'مرحبًا بك في {name} 🌿 يسعدنا خدمتك.',seasons:[],notes:['حافظ على نظافة المخيم وارمِ النفايات في الأماكن المخصصة.','يمنع التخريب أو إتلاف المرافق والأثاث، وسيُحاسَب المتسبب بالتعويض.','الألعاب النارية والألعاب الهوائية ممنوعة منعًا باتًا حفاظًا على السلامة.','الالتزام بالهدوء بعد الساعة 11 مساءً واحترام الجيران.','إطفاء النار بالكامل قبل المغادرة أو النوم.','التأمين يُسترد عند تسليم المخيم سليمًا ونظيفًا.']},bookings:[],visits:[],likes:[],media:[],liked:false,counter:null};
 const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const dd=d=>typeof d.data==='function'?d.data():d.data;
 function dates(iso){if(!iso)return'';const d=new Date(iso+'T12:00:00');
@@ -219,8 +219,13 @@ function renderAdmin(){
  ${svcCard()}
  ${aiCard()}
  ${seasonCard()}
- <div class="card"><h3>⚙️ الأسعار الافتراضية (خارج المواسم)</h3><div class="grid">
- <div><label>سعر قسم واحد</label><input id="p1" type="number" value="${st.p1}"></div><div><label>سعر قسمين</label><input id="p2" type="number" value="${st.p2}"></div>
+ <div class="card"><h3>⚙️ الأسعار الافتراضية (خارج المواسم)</h3><h4 style="margin:6px 0">🗓️ وسط الأسبوع (الأحد – الأربعاء)</h4><div class="grid">
+ <div><label>سعر قسم واحد</label><input id="p1" type="number" value="${st.p1}"></div><div><label>سعر قسمين</label><input id="p2" type="number" value="${st.p2}"></div></div>
+ <h4 style="margin:10px 0 6px">🎉 نهاية الأسبوع (الويكند)</h4><div class="grid">
+ <div><label>الخميس: سعر القسم</label><input id="th1" type="number" value="${st.th1}"></div><div><label>الخميس: سعر القسمين</label><input id="th2" type="number" value="${st.th2}"></div>
+ <div><label>الجمعة: سعر القسم</label><input id="fr1" type="number" value="${st.fr1}"></div><div><label>الجمعة: سعر القسمين</label><input id="fr2" type="number" value="${st.fr2}"></div>
+ <div><label>السبت: سعر القسم</label><input id="sa1" type="number" value="${st.sa1}"></div><div><label>السبت: سعر القسمين</label><input id="sa2" type="number" value="${st.sa2}"></div></div>
+ <h4 style="margin:10px 0 6px">💵 العربون والتأمين</h4><div class="grid">
  <div><label>العربون</label><input id="dep" type="number" value="${st.dep}"></div><div><label>التأمين</label><input id="ins" type="number" value="${st.ins}"></div></div></div>
  <button id="sv" style="width:100%;font-size:17px">💾 حفظ كل الإعدادات</button>
  ${secCard(1)}
@@ -287,7 +292,7 @@ function renderAdmin(){
  app.querySelectorAll('[data-q]').forEach(e=>e.onclick=()=>{const r=S.ratings.find(x=>x.id===e.dataset.q);if(!r)return;saveSt({quotes:[...(S.settings.quotes||[]),{n:r.name||'زائر',t:r.note}]}).then(()=>alert('تم النشر'))});
  $('#nm0').onchange=()=>{const v=$('#nm0').value.trim();if(v)saveSt({name:v}).catch(()=>alert('تعذر حفظ الاسم'))};
  $('#ds').onchange=()=>saveSt({desc:$('#ds').value.trim()}).catch(()=>{});
- $('#sv').onclick=async()=>saveSt({...(await extra()),p1:+$('#p1').value||0,p2:+$('#p2').value||0,dep:+$('#dep').value||0,ins:+$('#ins').value||0,name:$('#nm0').value.trim()||'مخيمي',desc:$('#ds').value.trim(),ac:$('#ac').value,ac2:$('#ac2').value,notes:$('#nt').value.split('\n').map(x=>x.trim()).filter(Boolean)}).then(()=>alert('تم الحفظ')).catch(()=>alert('تعذر الحفظ'));
+ $('#sv').onclick=async()=>saveSt({...(await extra()),p1:+$('#p1').value||0,p2:+$('#p2').value||0,th1:+$('#th1').value||0,th2:+$('#th2').value||0,fr1:+$('#fr1').value||0,fr2:+$('#fr2').value||0,sa1:+$('#sa1').value||0,sa2:+$('#sa2').value||0,dep:+$('#dep').value||0,ins:+$('#ins').value||0,name:$('#nm0').value.trim()||'مخيمي',desc:$('#ds').value.trim(),ac:$('#ac').value,ac2:$('#ac2').value,notes:$('#nt').value.split('\n').map(x=>x.trim()).filter(Boolean)}).then(()=>alert('تم الحفظ')).catch(()=>alert('تعذر الحفظ'));
  app.querySelectorAll('[data-pre]').forEach(e=>e.onclick=()=>{const p=e.dataset.pre.split(',');$('#ac').value=p[0];$('#ac2').value=p[1]});
  $('#lg').onchange=async e=>{const f=e.target.files[0];const as=await claude.use('assets');if(!f||!as)return;try{const r=await as.upload(f);await saveSt({logo:r.url});alert('تم رفع الشعار')}catch(x){alert('فشل رفع الشعار')}};
  $('#aiD').onclick=async()=>{const t=await ai('اكتب وصفًا تسويقيًا جذابًا بالعربية في 3 جمل لمخيم للإيجار اليومي اسمه "'+$('#nm0').value+'". بدون مقدمات.');if(t)$('#ds').value=t.trim()};
@@ -352,7 +357,7 @@ function renderRate(){const st=S.settings;app.innerHTML=`${wm()}<div class="hero
  app.querySelectorAll('#stars span').forEach(e=>e.onclick=()=>{stars=+e.dataset.i;const n=$('#rn').value,t=$('#rt').value;renderRate();$('#rn').value=n;$('#rt').value=t});
  if($('#rs'))$('#rs').onclick=()=>{if(!stars){alert('اختر عدد النجوم');return}S.db.doc('ratings/'+S.uid).set({stars,name:$('#rn').value.trim(),note:$('#rt').value.trim(),at:Date.now()}).then(()=>{rated=true;renderRate()}).catch(()=>alert('تعذر الإرسال، تأكد من تسجيل الدخول'))}}
 const DN=['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-function priceFor(iso,n){const st=S.settings;let p=n===2?st.p2:st.p1,dep=st.dep,ins=st.ins,sname='';if(iso){const sn=(st.seasons||[]).find(x=>x.from<=iso&&iso<=x.to);if(sn){sname=sn.name;const e=(sn.days||{})[new Date(iso+'T12:00:00').getDay()];if(e){const v=n===2?e.p2:e.p;if(v)p=v;if(e.dep)dep=e.dep;if(e.ins)ins=e.ins}}}return{p,dep,ins,sname}}
+function priceFor(iso,n){const st=S.settings;let p=n===2?st.p2:st.p1,dep=st.dep,ins=st.ins,sname='';if(iso){const dw=new Date(iso+'T12:00:00').getDay(),k=dw===4?'th':dw===5?'fr':dw===6?'sa':'';if(k){const v=+st[k+(n===2?2:1)];if(v>0)p=v}}if(iso){const sn=(st.seasons||[]).find(x=>x.from<=iso&&iso<=x.to);if(sn){sname=sn.name;const e=(sn.days||{})[new Date(iso+'T12:00:00').getDay()];if(e){const v=n===2?e.p2:e.p;if(v)p=v;if(e.dep)dep=e.dep;if(e.ins)ins=e.ins}}}return{p,dep,ins,sname}}
 const pageBase=()=>S.settings.pageUrl||location.href.split('#')[0];
 const baseUrl=()=>S.settings.trackUrl||(pageBase()+'#book');
 const waShare=()=>(S.settings.welcome||'مرحبًا بك في {name} 🌿').replace('{name}',S.settings.name)+'\n\n🔗 '+baseUrl();
