@@ -146,18 +146,18 @@ function renderAdmin(){
  const nw=b.filter(x=>x.status==='new'),ok=b.filter(x=>x.status==='approved'),no=[],rejN=S.bookings.filter(x=>x.status==='rejected').length;
  const noAns=S.visits.filter(v=>v.answer==='no').length;
  const notes=[];
- nw.forEach(x=>notes.push(['n','🎉 حجز جديد من '+x.name+' ليوم '+x.date]));
+ nw.forEach(x=>notes.push(['n','🎉 حجز جديد من '+x.name+' ليوم '+x.date+(x.at?' (أُرسل '+atFmt(x.at)+')':'')]));
  S.ratings.slice(-3).forEach(r=>notes.push(['b','⭐ تقييم جديد '+r.stars+'/5'+(r.note?': '+r.note:'')]));
  ok.forEach(x=>{if(x.pay==='full')notes.push(['n','💰 '+x.name+' سدّد كامل المبلغ'])});
  ok.forEach(x=>{const n=daysTo(x.date);if(n>=0&&n<=2)notes.push(['w','⏰ تنبيه: حجز '+x.name+' '+(n===0?'اليوم':n===1?'غدًا':'بعد يومين')+' ('+x.date+')'])});
- ok.forEach(x=>{if(x.pay!=='full')notes.push(['w','💰 '+x.name+': '+(x.pay==='deposit'?'دفع العربون فقط':'لم يدفع')+' — المتبقي غير مسدد'])});
+ ok.forEach(x=>{if(x.pay!=='full')notes.push(['w','💰 '+x.name+': '+(x.pay==='deposit'?'دفع العربون فقط':x.pay==='later'?'الدفع عند الوصول':'لم يدفع')+' — المتبقي غير مسدد'])});
  ok.forEach(x=>{if(x.ins!=='paid')notes.push(['','🛡️ التأمين لم يُستلم من '+x.name])});
  S.bookings.filter(x=>archState(x)==='زبائن سابقون'&&remainNum(x)>0).forEach(x=>notes.push(['w','💰 '+x.name+': انتهى حجزه وعليه متبقي '+remainNum(x)+' ريال']));
  b.forEach(x=>{if(x.prevClaim&&!x.prevOk&&!x.prevCheck)notes.push(['w','⚠️ '+x.name+' يقول إنه زائر سابق لكن رقمه ('+x.phone+') غير مسجل — يلزم تأكيدك'])});
  no.forEach(x=>notes.push(['n','✖ رفض/لم يتم الاتفاق مع '+x.name]));
- const rows=b.map(x=>`<tr><td>${esc(x.name)}${x.rcNo?'<br><span class="tag" dir="ltr">'+esc(x.rcNo)+'</span>':''}${histBadge(x)}${x.prevOk?' <span class="tag">زائر سابق ✓'+(x.prevCheck?' ('+esc(x.prevCheck)+')':'')+'</span>':x.prevClaim?(x.prevCheck?' <span class="tag">'+esc(x.prevCheck)+'</span>':'<br><span class="tag" style="background:var(--rd);color:#fff">رقم غير مسجل</span><br><button class="g" data-pc="yes" data-id="'+x.id+'">✔ رقم سابق</button> <button class="o" data-pc="chg" data-id="'+x.id+'">🔄 تغيّر الرقم</button> <button class="o" data-pc="no" data-id="'+x.id+'">؟ غير متأكد</button>'):''}</td><td>${esc(x.phone)}</td><td>${secLabel(x)}</td><td>${esc(x.date)}<br><small>${esc(x.hijri)}</small></td><td>${x.price}${x.offer?'<br><small>مقترح: '+x.offer+'</small>':''}</td>
+ const rows=b.map(x=>`<tr><td>${esc(x.name)}${x.at?'<br><small style="color:var(--mu)">🕒 أُرسل: '+atFmt(x.at)+'</small>':''}${x.rcNo?'<br><span class="tag" dir="ltr">'+esc(x.rcNo)+'</span>':''}${histBadge(x)}${x.prevOk?' <span class="tag">زائر سابق ✓'+(x.prevCheck?' ('+esc(x.prevCheck)+')':'')+'</span>':x.prevClaim?(x.prevCheck?' <span class="tag">'+esc(x.prevCheck)+'</span>':'<br><span class="tag" style="background:var(--rd);color:#fff">رقم غير مسجل</span><br><button class="g" data-pc="yes" data-id="'+x.id+'">✔ رقم سابق</button> <button class="o" data-pc="chg" data-id="'+x.id+'">🔄 تغيّر الرقم</button> <button class="o" data-pc="no" data-id="'+x.id+'">؟ غير متأكد</button>'):''}</td><td>${esc(x.phone)}</td><td>${secLabel(x)}</td><td>${esc(x.date)}<br><small>${esc(x.hijri)}</small></td><td>${x.price}${x.offer?'<br><small>مقترح: '+x.offer+'</small>':''}</td>
  <td>${stBadge(x)}</td><td>${remain(x)}</td>
- <td><select data-id="${x.id}" data-f="pay"><option value="none"${x.pay==='none'?' selected':''}>لم يدفع</option><option value="deposit"${x.pay==='deposit'?' selected':''}>عربون</option><option value="full"${x.pay==='full'?' selected':''}>كامل المبلغ</option></select><br><select data-id="${x.id}" data-f="method">${['نقد','تحويل','مدى','أخرى'].map(o=>`<option${x.method===o?' selected':''}>${o}</option>`).join('')}</select></td>
+ <td><select data-id="${x.id}" data-f="pay"><option value="none"${x.pay==='none'?' selected':''}>لم يدفع</option><option value="deposit"${x.pay==='deposit'?' selected':''}>عربون</option><option value="full"${x.pay==='full'?' selected':''}>دفع كامل المبلغ</option><option value="later"${x.pay==='later'?' selected':''}>الدفع لاحقًا عند الوصول</option></select><br><select data-id="${x.id}" data-f="method">${['نقد','تحويل','مدى','أخرى'].map(o=>`<option${x.method===o?' selected':''}>${o}</option>`).join('')}</select></td>
  <td><select data-id="${x.id}" data-f="ins"><option value="no"${x.ins!=='paid'?' selected':''}>لم يُستلم</option><option value="paid"${x.ins==='paid'?' selected':''}>مُستلم</option></select></td>
  <td><button class="g" data-id="${x.id}" data-s="approved">قبول</button> <button class="r" data-id="${x.id}" data-s="rejected">رفض</button> <a class="btn" style="padding:6px 10px" target="_blank" href="https://wa.me/${waNum(x.phone)}?text=${encodeURIComponent(waMsg(x.price,x.deposit,x.insurance,x.date))}">واتساب</a> <button class="o" data-rate="${x.id}">⭐ طلب تقييم</button> <button class="o" data-prev="${x.id}">زائر سابق</button> <button class="o" data-pm="${x.id}">💳 الإيصالات</button> <button class="o" data-rc="${x.id}">🖨️ إيصال حجز</button></td></tr>`).join('');
  const mf=S.mf||{},mfv=k=>esc(mf[k]??'');
@@ -296,7 +296,7 @@ function renderAdmin(){
  app.querySelectorAll('[data-mv]').forEach(e=>e.onclick=async()=>{const [id,d,n]=e.dataset.mv.split('|');const arr=srt(S.media.filter(secOf(+n)));const i=arr.findIndex(x=>x.id===id),j=i+ +d;if(j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];for(let k=0;k<arr.length;k++)await S.db.doc('media/'+arr[k].id).update({ord:k})});
 }
 async function exportXlsx(){
- const data=S.bookings.map(x=>({'رقم الإيصال':x.rcNo||'','الاسم':x.name,'واتساب':x.phone,'الأقسام':x.sections,'رقم القسم':x.secNum||'','التاريخ الميلادي':x.date,'التاريخ الهجري':x.hijri,'السعر':x.price,'السعر المقترح':x.offer||'','زائر سابق':x.prevOk?'نعم (مؤكد)':x.prevClaim?'يدّعي':'لا','تأكيد الأدمن':x.prevCheck||'','المتبقي':remainNum(x),'طريقة الدفع':x.method||'','الخدمات':(x.services||[]).join('، '),'ملاحظات':x.note||'','الأرشفة':archState(x),'مبلغ مدفوع':x.depAmt||'','مبلغ التأمين':x.insAmt||'','طريقة التأمين':x.insMethod||'','رقم تحويل العربون':x.depRef||'','رقم تحويل التأمين':x.insRef||'','العربون':x.deposit,'التأمين':x.insurance,'الحالة':x.status,'الدفع':x.pay,'استلام التأمين':x.ins}));
+ const data=S.bookings.map(x=>({'رقم الإيصال':x.rcNo||'','الاسم':x.name,'واتساب':x.phone,'الأقسام':x.sections,'رقم القسم':x.secNum||'','التاريخ الميلادي':x.date,'التاريخ الهجري':x.hijri,'السعر':x.price,'السعر المقترح':x.offer||'','زائر سابق':x.prevOk?'نعم (مؤكد)':x.prevClaim?'يدّعي':'لا','تأكيد الأدمن':x.prevCheck||'','المتبقي':remainNum(x),'طريقة الدفع':x.method||'','الخدمات':(x.services||[]).join('، '),'ملاحظات':x.note||'','الأرشفة':archState(x),'مبلغ مدفوع':x.depAmt||'','مبلغ التأمين':x.insAmt||'','طريقة التأمين':x.insMethod||'','تاريخ العربون':x.depDate||'','تاريخ التأمين':x.insDate||'','رقم تحويل العربون':x.depRef||'','رقم تحويل التأمين':x.insRef||'','العربون':x.deposit,'التأمين':x.insurance,'الحالة':x.status,'الدفع':x.pay,'استلام التأمين':x.ins}));
  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(data),'الحجوزات');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(S.prevList.map(c=>({'الاسم':c.n,'الرقم':c.p}))),'الزبائن السابقون');
  const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
  try{const d=await claude.use('downloads');if(!d)throw 0;await d.save({filename:'bookings.xlsx',data:new Blob([out],{type:'application/octet-stream'})})}catch(e){alert('التنزيل غير متاح في هذا العرض')}
@@ -311,21 +311,23 @@ const extra=async()=>({loc:safe($('#loc').value.trim()),tel:$('#tel').value.trim
 const setPrev=async cur=>{await S.db.doc('admin/prevlist').set({list:cur});S.prevList=cur;const h=[];for(const c of cur)h.push(await hashP(c.p));await saveSt({prev:h})};
 const k9=p=>String(p).replace(/\D/g,'').slice(-9);
 const addPrev=async items=>{const cur=S.prevList.slice();items.forEach(i=>{if(k9(i.p).length>=7&&!cur.some(c=>k9(c.p)===k9(i.p)))cur.push({n:i.n||'',p:String(i.p).trim(),c:i.c||1})});await setPrev(cur)};
-let WA='',PV={claim:false,ok:false},stars=0,rated=false;
+let WA='',WA2='',PV={claim:false,ok:false},stars=0,rated=false;
 
 /* ===== v6: receipt no, search, social, offer ===== */
+const atFmt=ms=>ms?new Date(ms).toLocaleString('ar-SA-u-ca-gregory-nu-latn',{dateStyle:'short',timeStyle:'short'}):'';
+setInterval(()=>{try{const n=S.isAdmin&&isAdminView()?S.bookings.filter(x=>x.status==='new'&&archState(x)==='').length:0;if(n&&!document.hasFocus()||n&&S.tb){S.tb=!S.tb;document.title=S.tb?'🔔 ('+n+') طلب حجز جديد!':(S.settings.name||'')}else if(!n&&S.tb){S.tb=false;document.title=S.settings.name||document.title}}catch(e){}},1500);
 const rcPrefix=x=>{const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(x.date||''),p=n=>String(n).padStart(2,'0');if(m)return 'DC-'+m[1].slice(2)+m[2]+m[3];const d=new Date(x.at||Date.now());return 'DC-'+p(d.getFullYear()%100)+p(d.getMonth()+1)+p(d.getDate())};
 async function ensureRcNo(x,force){S.rcMap=S.rcMap||{};if(!force){if(x.rcNo)return x;if(x.id&&S.rcMap[x.id]){x.rcNo=S.rcMap[x.id];return x}}
  const pf=rcPrefix(x);let mx=0;S.bookings.forEach(b=>{if(b.id===x.id)return;const n=S.rcMap[b.id]||b.rcNo;if(n&&n.startsWith(pf))mx=Math.max(mx,+n.slice(pf.length)||0)});
  const no=pf+String(mx+1).padStart(2,'0');x.rcNo=no;if(x.id){S.rcMap[x.id]=no;try{await S.db.doc('bookings/'+x.id).update({rcNo:no,rcV2:true})}catch(e){}}return x}
 async function assignRcNos(){if(S.rcBusy||!S.db)return;S.rcBusy=true;S.rcMap=S.rcMap||{};try{const l=S.bookings.filter(b=>b.status!=='rejected'&&!S.rcMap[b.id]&&(!b.rcNo||(!b.rcV2&&!b.rcNo.startsWith(rcPrefix(b))))).sort((a,b)=>(a.at||0)-(b.at||0));for(const b of l)await ensureRcNo(b,!!b.rcNo)}finally{S.rcBusy=false}}
 const nrmQ=s=>String(s||'').replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)).toUpperCase().replace(/[^A-Z0-9؀-ۿ]/g,'');
-const PAYL={none:'لم يدفع',deposit:'دفع العربون',full:'دفع كامل المبلغ'};
+const PAYL={none:'لم يدفع',deposit:'دفع العربون',full:'دفع كامل المبلغ',later:'الدفع لاحقًا عند الوصول'};
 function rsCard(b){const dA=+(b.depAmt??b.deposit)||0;return `<div style="border:1px solid #8884;border-radius:12px;padding:10px;margin-top:8px;line-height:1.9"><b dir="ltr" style="font-size:16px">${esc(b.rcNo||'— (بدون رقم)')}</b> ${stBadge(b)}
-<div>👤 ${esc(b.name||'')} — 📱 <span dir="ltr">${esc(b.phone||'')}</span></div>
+${b.at?'<div style="font-size:12px;color:var(--mu)">🕒 أُرسل: '+atFmt(b.at)+'</div>':''}<div>👤 ${esc(b.name||'')} — 📱 <span dir="ltr">${esc(b.phone||'')}</span></div>
 <div>📅 ${esc(b.date||'')} ${b.hijri?'('+esc(b.hijri)+')':''} — ${b.sections==2?'قسمان':'قسم واحد'+(b.secNum?' (رقم '+b.secNum+')':'')}</div>
 <div>💰 السعر: ${+b.price||0} — العربون: ${dA} — التأمين: ${+(b.insAmt??b.insurance)||0} (${b.ins==='paid'?'مُستلم':'لم يُستلم'}) — المتبقي: <b>${remainNum(b)}</b></div>
-<div>💳 ${PAYL[b.pay||'none']||''}${b.depMethod||b.method?' — '+esc(b.depMethod||b.method):''}${b.depRef?' — رقم التحويل: <span dir="ltr">'+esc(b.depRef)+'</span>':''}</div>
+<div>💳 ${PAYL[b.pay||'none']||''}${b.depMethod||b.method?' — '+esc(b.depMethod||b.method):''}${b.depDate?' — تاريخ العربون: <span dir="ltr">'+esc(b.depDate)+'</span>':''}</div>
 ${b.note?'<div>📝 '+esc(b.note)+'</div>':''}${b.promo?'<div>🔥 خصم العرض '+b.promo+'%</div>':''}
 <div class="tabs" style="margin-top:6px"><button class="o" data-rcp="${b.id}">🖨️ الإيصال</button><button data-rpm="${b.id}">💳 الدفع</button></div></div>`}
 function rsResults(){const q=nrmQ(S.rsq);if(!q)return '<p style="color:var(--mu);margin:8px 0 0">اكتب رقم الإيصال (مثل DC-26112201) أو اسم الزبون أو رقم جواله.</p>';
@@ -400,7 +402,7 @@ if(S.settings.cfToken){const sc=document.createElement('script');sc.defer=true;s
 const html='<!DOCTYPE html>\n'+c.outerHTML,mb=Math.round(html.length/1048576*10)/10;alert('حجم الملف '+mb+' ميغا'+(skipped?' — تم استبعاد '+skipped+' فيديو':'')+(mb>24?' — لا يزال أكبر من 25 ميغا، قلّل عدد الصور':''));
 try{await d.save({filename:'index.html',data:new Blob([html],{type:'text/html'})})}catch(e){alert('تعذر حفظ الملف')}}
 const DS=['أحد','إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت'];
-const calDetail=b=>{const paid=b.pay==='full'?'سدّد كامل المبلغ':b.pay==='deposit'?'دفع العربون فقط':'لم يدفع';return `<div class="note" style="margin-top:8px"><b>👤 ${esc(b.name)}</b> ${stBadge(b)}${histBadge(b)}<br>
+const calDetail=b=>{const paid=b.pay==='full'?'سدّد كامل المبلغ':b.pay==='deposit'?'دفع العربون فقط':b.pay==='later'?'الدفع لاحقًا عند الوصول':'لم يدفع';return `<div class="note" style="margin-top:8px"><b>👤 ${esc(b.name)}</b> ${stBadge(b)}${histBadge(b)}<br>
 📞 <a href="https://wa.me/${waNum(b.phone)}" target="_blank" dir="ltr">${esc(b.phone)}</a><br>
 🏕️ ${secLabel(b)} — 📅 ${esc(b.date)} (${esc(b.hijri||'')})<br>
 💰 السعر: ${b.price} ريال${b.offer?' — مقترح الزبون: '+b.offer:''}<br>
@@ -434,27 +436,28 @@ function waPanel(){const t=waShare(),e=encodeURIComponent(t);return `<div class=
 const rcImg=b=>{const im=(t,u)=>u?`<div>🧾 ${t}:<br><img loading="lazy" decoding="async" src="${esc(u)}" alt="" style="width:100%;max-height:180px;object-fit:contain;cursor:zoom-in" onclick="this.style.maxHeight=this.style.maxHeight==='none'?'180px':'none'"></div>`:'';return (b.depMethod?`💵 الدفع: ${esc(b.depMethod)}${b.depAmt?' — '+b.depAmt+' ريال':''}<br>`:'')+(b.insMethod&&b.ins==='paid'?`🛡️ التأمين: ${esc(b.insMethod)}${b.insAmt?' — '+b.insAmt+' ريال':''}<br>`:'')+(b.depRef?`🔢 رقم تحويل العربون: ${esc(b.depRef)}<br>`:'')+(b.insRef?`🔢 رقم تحويل التأمين: ${esc(b.insRef)}<br>`:'')+im('إيصال العربون',b.rcDep)+im('إيصال التأمين',b.rcIns)};
 async function setStatus(x,status,extra){const u={...extra,status};if(status==='approved'&&!x.counted){const cur=S.prevList.map(c=>({...c})),k=cur.findIndex(c=>k9(c.p)===k9(x.phone));if(k>=0)cur[k].c=(cur[k].c||1)+1;else cur.push({n:x.name,p:x.phone,c:1});await setPrev(cur);u.counted=true}await S.db.doc('bookings/'+x.id).update(u)}
 function payModal(id){const x=S.bookings.find(b=>b.id===id);if(!x)return;let el=$('#pm');if(!el){el=document.createElement('div');el.id='pm';document.body.appendChild(el)}
-const pay=x.pay&&x.pay!=='none'?x.pay:'deposit',opt=(v,a)=>a.map(o=>`<option${o===v?' selected':''}>${o}</option>`).join(''),appr=x.status==='approved';
+const pay=x.status==='approved'?(x.pay||'none'):(x.pay&&x.pay!=='none'?x.pay:'deposit'),opt=(v,a)=>a.map(o=>`<option${o===v?' selected':''}>${o}</option>`).join(''),appr=x.status==='approved';
 const img=u=>u?`<img loading="lazy" decoding="async" src="${esc(u)}" alt="" style="width:100%;max-height:200px;object-fit:contain;margin:6px 0">`:'';
 el.innerHTML=`<div style="position:fixed;inset:0;background:#0009;z-index:55;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(12px + env(safe-area-inset-top,0px)) 10px 20px"><div class="card" style="max-width:520px;width:100%;margin:0">
 <h3>${appr?'💳 الدفعات والإيصالات':'✅ تأكيد الحجز'} — ${esc(x.name)}</h3><p style="color:var(--mu)">${esc(x.date)} — السعر ${x.price} ريال</p>
 <h4>العربون / الدفع</h4>
-<label>حالة الدفع</label><select id="pmPay"><option value="none"${pay==='none'?' selected':''}>لم يدفع</option><option value="deposit"${pay==='deposit'?' selected':''}>عربون</option><option value="full"${pay==='full'?' selected':''}>كامل المبلغ</option></select>
-<label>المبلغ المدفوع (ريال)</label><input id="pmAmt" type="number" value="${x.depAmt??(pay==='full'?x.price:(x.deposit||0))}">
+<label>حالة الدفع</label><select id="pmPay"><option value="none"${pay==='none'?' selected':''}>لم يدفع</option><option value="deposit"${pay==='deposit'?' selected':''}>عربون</option><option value="full"${pay==='full'?' selected':''}>دفع كامل المبلغ</option><option value="later"${pay==='later'?' selected':''}>الدفع لاحقًا عند الوصول</option></select>
+<label>المبلغ المدفوع (ريال)</label><input id="pmAmt" type="number" placeholder="0" value="${pay==='none'||pay==='later'?'':(x.depAmt??(pay==='full'?x.price:(x.deposit||0)))}">
 <label>طريقة الدفع</label><select id="pmMet">${opt(x.depMethod||'كاش',['كاش','تحويل'])}</select>
-<label>تاريخ العربون</label><input id="pmDD" type="date" value="${esc(x.depDate||todayL())}"><label>رقم التحويل البنكي (عند اختيار تحويل)</label><input id="pmRef" dir="ltr" value="${esc(x.depRef||'')}">
+<label>تاريخ التحويل البنكي / تاريخ العربون</label><input id="pmDD" type="date" value="${esc(x.depDate||todayL())}">
 <label>صورة إيصال العربون (للتحويل)</label><input type="file" id="pmRc" accept="image/*">${img(x.rcDep)}
 <h4>التأمين</h4>
 <label>حالة التأمين</label><select id="pmIns"><option value="no"${x.ins!=='paid'?' selected':''}>لم يُستلم</option><option value="paid"${x.ins==='paid'?' selected':''}>مُستلم</option></select>
 <label>مبلغ التأمين (ريال)</label><input id="pmIA" type="number" value="${x.insAmt??x.insurance??0}">
 <label>طريقة دفع التأمين</label><select id="pmIM">${opt(x.insMethod||'كاش',['كاش','تحويل'])}</select>
-<label>رقم تحويل التأمين البنكي (عند اختيار تحويل)</label><input id="pmIRef" dir="ltr" value="${esc(x.insRef||'')}">
+<label>تاريخ تحويل التأمين البنكي / تاريخ التأمين</label><input id="pmID" type="date" value="${esc(x.insDate||todayL())}">
 <label>صورة إيصال التأمين (للتحويل)</label><input type="file" id="pmIR" accept="image/*">${img(x.rcIns)}
 <div class="tabs" style="margin-top:10px"><button class="g" id="pmOk">${appr?'💾 حفظ':'✅ تأكيد الحجز'}</button><button class="o" id="pmX">إلغاء</button></div></div></div>`;
 $('#pmX').onclick=()=>{el.innerHTML=''};
-$('#pmOk').onclick=async()=>{const b=$('#pmOk');if($('#pmMet').value==='تحويل'&&$('#pmPay').value!=='none'&&!$('#pmRef').value.trim()&&!confirm('اخترت «تحويل» دون كتابة رقم التحويل البنكي. هل تتابع بدونه؟'))return;if($('#pmIns').value==='paid'&&$('#pmIM').value==='تحويل'&&!$('#pmIRef').value.trim()&&!confirm('التأمين بتحويل دون رقم تحويل بنكي. هل تتابع بدونه؟'))return;b.disabled=true;try{const as=await claude.use('assets');const up=async f=>f&&as?(await as.upload(f,{max:900,q:.6,cap:280000})).url:null;
+$('#pmPay').onchange=()=>{const v=$('#pmPay').value;$('#pmAmt').value=v==='full'?x.price:v==='deposit'?(x.deposit||''):''};
+$('#pmOk').onclick=async()=>{const b=$('#pmOk');b.disabled=true;try{const as=await claude.use('assets');const up=async f=>f&&as?(await as.upload(f,{max:900,q:.6,cap:280000})).url:null;
 const r1=await up($('#pmRc').files[0]),r2=await up($('#pmIR').files[0]);
-const dm=$('#pmMet').value,u={pay:$('#pmPay').value,depAmt:+$('#pmAmt').value||0,depMethod:dm,method:dm==='كاش'?'نقد':'تحويل',ins:$('#pmIns').value,insAmt:+$('#pmIA').value||0,insMethod:$('#pmIM').value,depRef:$('#pmRef').value.trim(),depDate:$('#pmDD').value||'',insRef:$('#pmIRef').value.trim()};
+const dm=$('#pmMet').value,u={pay:$('#pmPay').value,depAmt:+$('#pmAmt').value||0,depMethod:dm,method:dm==='كاش'?'نقد':'تحويل',ins:$('#pmIns').value,insAmt:+$('#pmIA').value||0,insMethod:$('#pmIM').value,depDate:$('#pmDD').value||'',insDate:$('#pmID').value||''};
 if(r1)u.rcDep=r1;if(r2)u.rcIns=r2;
 if(appr)await S.db.doc('bookings/'+x.id).update(u);else await setStatus(x,'approved',u);
 el.innerHTML='';if(!appr)receiptModal({...x,...u})}catch(e){alert('تعذر الحفظ: '+(e.code||e.message));b.disabled=false}}}
@@ -526,8 +529,8 @@ const RC_NOTE='هذا الإيصال تمت كتابته كإثبات إيجار
 const rcNote=()=>typeof S.settings.rcNote==='string'?S.settings.rcNote:RC_NOTE;
 const rcLines=()=>Array.isArray(S.settings.rcPhrases)?S.settings.rcPhrases:RC_DEF;
 function rcData(x){const price=+x.price||0,pay=x.pay||'none',dA=+(x.depAmt??x.deposit)||0,iA=+(x.insAmt??x.insurance)||0,d=x.date?dates(x.date):{g:'',h:''};
- return {price,paidDep:pay==='full'?price:pay==='deposit'?dA:0,insAmt:iA,insPaid:x.ins==='paid',rem:remainNum(x),g:d.g,h:d.h,dm:x.depMethod||(x.method==='تحويل'?'تحويل':x.method==='نقد'?'كاش':''),im:x.insMethod||'',dRef:x.depRef||'',dDate:x.depDate?dates(x.depDate).g:'',iRef:x.insRef||'',no:x.rcNo||'—'}}
-function rcTransfers(r){const t=[];if(r.paidDep>0)t.push(['تاريخ العربون',r.dDate]);if(r.insPaid&&r.im==='تحويل')t.push(['رقم تحويل التأمين',r.iRef]);return t}
+ return {price,paidDep:pay==='full'?price:pay==='deposit'?dA:0,insAmt:iA,insPaid:x.ins==='paid',rem:remainNum(x),g:d.g,h:d.h,dm:x.depMethod||(x.method==='تحويل'?'تحويل':x.method==='نقد'?'كاش':''),im:x.insMethod||'',dRef:x.depRef||'',dDate:x.depDate?dates(x.depDate).g:'',iRef:x.insRef||'',iDate:x.insDate?dates(x.insDate).g:'',no:x.rcNo||'—'}}
+function rcTransfers(r){const t=[];if(r.paidDep>0)t.push(['تاريخ العربون',r.dDate]);if(r.insPaid)t.push(['تاريخ التأمين',r.iDate]);return t}
 function receiptHTML(x){const r=rcData(x),st=S.settings,tr=rcTransfers(r),ph=rcLines(),hr='<div style="border-top:2px dashed #888;margin:10px 0"></div>',
  ln=(a,b,k)=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;${k?'font-weight:700;font-size:15px;border-bottom:2px solid #111':'border-bottom:1px dotted #b8b8b8'}"><span>${a}</span><span style="text-align:left">${b}</span></div>`;
  return `<div id="rcPaper" dir="rtl" style="width:360px;max-width:100%;margin:auto;background:#fff;color:#111;padding:18px 16px;font-family:Tajawal,Tahoma,sans-serif;font-size:13px;line-height:1.7;border:1px solid #ccc;border-radius:6px">
@@ -560,7 +563,7 @@ function renderGuest(){
  const rules=(st.notes&&st.notes.length)?`<div class="card"><h3>📜 تعليمات وإرشادات</h3><ul class="rules">${st.notes.map(n=>`<li>${esc(n)}</li>`).join('')}</ul></div>`:'';
  let body='';
  if(done==='thanks')body='<h2>شكرًا لك على استفسارك 🌿</h2><p>نسعد بخدمتك في أي وقت.</p>';
- else if(done==='sent')body=WA?`<h2>خطوة أخيرة ✅</h2><p>اضغط الزر لإرسال طلبك إلينا عبر واتساب، وسنراجعه في أقرب وقت.</p><a class="btn" target="_blank" href="${WA}">إرسال الطلب عبر واتساب</a>`:'<h2>شكرًا لك ✅</h2><p>سيتم مراجعة طلبك في أقرب وقت.</p>';
+ else if(done==='sent')body=WA?`<h2>خطوة أخيرة ✅</h2><p>اضغط الزر لإرسال طلبك إلينا عبر واتساب، وسنراجعه في أقرب وقت.</p><a class="btn" target="_blank" href="${WA}">إرسال الطلب عبر واتساب</a>`:'<h2>شكرًا لك ✅</h2><p>سيتم مراجعة طلبك في أقرب وقت.</p>'+(WA2?'<p>لتسريع المراجعة أرسل لنا تنبيهًا عبر واتساب:</p><a class="btn" style="background:#25D366" target="_blank" rel="noopener" href="'+WA2+'">📲 تنبيه صاحب المخيم عبر واتساب</a>':'');
  else if(step==='ask')body=`<h3>هل تريد حجز المخيم؟</h3><div class="tabs"><button class="g" id="yes">نعم</button><button class="r" id="no">لا</button></div>`;
  else body=`<h3>نموذج الحجز</h3>
   <label>الاسم الكامل</label><input id="nm">
@@ -605,7 +608,7 @@ function bindForm(){
   if(!$('#ag').checked){alert('يرجى الموافقة على التعليمات');return}
   const d=dates(date),p=calc();
   const rec={name,phone,date,hijri:d.h,sections:+$('#sec').value,price:p,offer:+($('#co')&&$('#co').value)||0,deposit:CALC.dep,insurance:CALC.ins,services:[...document.querySelectorAll('.svc:checked')].map(e=>e.dataset.n),prevClaim:PV.claim,prevOk:PV.ok,promo:CALC.promo||0,status:'new',pay:'none',ins:'no',at:Date.now()};
-  try{if(S.db)await S.db.doc('bookings/'+S.uid).set(rec);else{const w=waNum(S.settings.tel);if(!w){alert('رقم التواصل غير مضبوط');return}const t='طلب حجز جديد - '+S.settings.name+'\nالاسم: '+name+'\nالأقسام: '+rec.sections+'\nالتاريخ: '+date+' ('+d.h+')\nالسعر: '+p+' ريال'+(rec.offer?'\nالسعر المقترح من الزبون: '+rec.offer:'')+'\nزائر سابق: '+(PV.claim?(PV.ok?'نعم (مؤكد)':'نعم (يدّعي)'):'لا')+'\nواتساب: '+phone;WA='https://wa.me/'+w+'?text='+encodeURIComponent(t)}done='sent';renderGuest()}catch(e){alert('تعذر الإرسال')}};
+  try{if(S.db){await S.db.doc('bookings/'+S.uid).set(rec);const w2=waNum(S.settings.tel);WA2=w2?'https://wa.me/'+w2+'?text='+encodeURIComponent('🔔 طلب حجز جديد - '+S.settings.name+'\nالاسم: '+name+'\nالتاريخ: '+date+' ('+d.h+')\nالأقسام: '+rec.sections+'\nالسعر: '+p+' ريال\nواتساب: '+phone):''}else{const w=waNum(S.settings.tel);if(!w){alert('رقم التواصل غير مضبوط');return}const t='طلب حجز جديد - '+S.settings.name+'\nالاسم: '+name+'\nالأقسام: '+rec.sections+'\nالتاريخ: '+date+' ('+d.h+')\nالسعر: '+p+' ريال'+(rec.offer?'\nالسعر المقترح من الزبون: '+rec.offer:'')+'\nزائر سابق: '+(PV.claim?(PV.ok?'نعم (مؤكد)':'نعم (يدّعي)'):'لا')+'\nواتساب: '+phone;WA='https://wa.me/'+w+'?text='+encodeURIComponent(t)}done='sent';renderGuest()}catch(e){alert('تعذر الإرسال')}};
 }
 if(!window.__FB)init();
 </script>
